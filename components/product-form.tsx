@@ -1,10 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { format } from "date-fns"
+import { format, set } from "date-fns"
 import { createClient } from "@supabase/supabase-js"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,16 +13,17 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Calendar } from "lucide-react"
+import { comment } from "postcss"
 
 const formSchema = z.object({
   product: z.string().min(1, { message: "Product is required" }),
-  brand: z.string().min(1, { message: "Brand is required" }),
-  model: z.string().min(1, { message: "Model is required" }),
-  serialNumber: z.string().optional(),
+  // brand: z.string().min(1, { message: "Brand is required" }),
+  // model: z.string().min(1, { message: "Model is required" }),
+  // serialNumber: z.string().optional(),
   total: z.coerce.number().positive({ message: "Total must be a positive number" }),
   name: z.string().min(1, { message: "Name is required" }),
   class: z.string().min(1, { message: "Class is required" }),
-  status: z.string().min(1, { message: "Status is required" }),
+  // status: z.string().min(1, { message: "Status is required" }),
   date: z.date({ required_error: "Date is required" }),
   comment: z.string().optional(), // Use .optional() to make it optional
 })
@@ -30,49 +31,69 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>
 
 export default function ProductForm() {
-  // Sample product data
-  const products = [
-    {
-      id: "laptop",
-      name: "Laptop",
-      models: [
-        { id: "macbook", name: "MacBook Pro" },
-        { id: "thinkpad", name: "ThinkPad X1" },
-        { id: "xps", name: "Dell XPS" },
-      ],
-    },
-    {
-      id: "smartphone",
-      name: "Smartphone",
-      models: [
-        { id: "iphone", name: "iPhone 15" },
-        { id: "pixel", name: "Google Pixel" },
-        { id: "galaxy", name: "Samsung Galaxy" },
-      ],
-    },
-    {
-      id: "tablet",
-      name: "Tablet",
-      models: [
-        { id: "ipad", name: "iPad Pro" },
-        { id: "surface", name: "Surface Pro" },
-        { id: "galaxy-tab", name: "Galaxy Tab" },
-      ],
-    },
-  ]
 
-  // Serial numbers by model
-  const serialNumbers = {
-    macbook: ["MB-001", "MB-002", "MB-003"],
-    thinkpad: ["TP-001", "TP-002", "TP-003"],
-    xps: ["XPS-001", "XPS-002", "XPS-003"],
-    iphone: ["IP-001", "IP-002", "IP-003"],
-    pixel: ["PX-001", "PX-002", "PX-003"],
-    galaxy: ["SG-001", "SG-002", "SG-003"],
-    ipad: ["IPD-001", "IPD-002", "IPD-003"],
-    surface: ["SP-001", "SP-002", "SP-003"],
-    "galaxy-tab": ["GT-001", "GT-002", "GT-003"],
-  }
+  const [products, setProducts] = useState<any[]>([])
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+);
+  // Sample product data
+  useEffect(() => {
+
+  
+          const fetchNotes = async () => {
+              const { data, error } = await supabase.from('products').select(`*`);
+              if (error) {
+                  return 'error fetching notes: ' + error.message;
+              }
+              setProducts(data || []);
+          };
+  
+          fetchNotes();
+          console.log( "fetched products:" + products)
+      }, []);
+      
+  // const products = [
+  //   {
+  //     id: "laptop",
+  //     name: "Laptop",
+  //     models: [
+  //       { id: "macbook", name: "MacBook Pro" },
+  //       { id: "thinkpad", name: "ThinkPad X1" },
+  //       { id: "xps", name: "Dell XPS" },
+  //     ],
+  //   },
+  //   {
+  //     id: "smartphone",
+  //     name: "Smartphone",
+  //     models: [
+  //       { id: "iphone", name: "iPhone 15" },
+  //       { id: "pixel", name: "Google Pixel" },
+  //       { id: "galaxy", name: "Samsung Galaxy" },
+  //     ],
+  //   },
+  //   {
+  //     id: "tablet",
+  //     name: "Tablet",
+  //     models: [
+  //       { id: "ipad", name: "iPad Pro" },
+  //       { id: "surface", name: "Surface Pro" },
+  //       { id: "galaxy-tab", name: "Galaxy Tab" },
+  //     ],
+  //   },
+  // ]
+  // // Serial numbers by model
+  // const serialNumbers = {
+  //   macbook: ["MB-001", "MB-002", "MB-003"],
+  //   thinkpad: ["TP-001", "TP-002", "TP-003"],
+  //   xps: ["XPS-001", "XPS-002", "XPS-003"],
+  //   iphone: ["IP-001", "IP-002", "IP-003"],
+  //   pixel: ["PX-001", "PX-002", "PX-003"],
+  //   galaxy: ["SG-001", "SG-002", "SG-003"],
+  //   ipad: ["IPD-001", "IPD-002", "IPD-003"],
+  //   surface: ["SP-001", "SP-002", "SP-003"],
+  //   "galaxy-tab": ["GT-001", "GT-002", "GT-003"],
+  // }
 
   const [selectedProduct, setSelectedProduct] = useState<string>("")
   const [selectedModel, setSelectedModel] = useState<string>("")
@@ -82,40 +103,45 @@ export default function ProductForm() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       product: "",
-      model: "",
-      serialNumber: "",
-      total: undefined,
+      // model: "",
+      // serialNumber: "",
+      total: 1,
       name: "",
       class: "",
-      status: "active", // Set default status to active
+      // status: "active", // Set default status to active
       date: new Date(), // Set default date to current date
       comment: "",
     },
   })
 
-  function onSubmit(data: FormValues) {
-    setIsSubmitting(true)
+  async function onSubmit(data: FormValues) {
+    try {
+      const { error } = await supabase
+        .from('forms')
+        .insert([
+          {
+            product_id: Number(data.product),
+            total: data.total,
+            name: data.name,
+            class: data.class,
+            comment: data.comment,
+            // status: "processed",
+            // returned_at: null,
+          }
+        ]);
 
-    // Simulate form submission
-    setTimeout(() => {
-      console.log(data)
-      alert("Form submitted successfully!")
-      setIsSubmitting(false)
-    }, 1000)
-  }
-
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || "",
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
-  )
-
-  supabase.from('forms').select(`*,product_id(*) `).then(({ data, error }) => {
-    if (error) {
-      console.error("Error fetching data:", error)
-    } else {
-      console.log("Fetched data:", data)
+      if (error) {
+        console.error('Error inserting form:', error.message);
+        alert('Failed to submit the form. Please check your input.');
+      } else {
+        console.log('Form inserted successfully:', data);
+        alert('Form submitted successfully!');
+      }
+    } catch (err) {
+      console.error('Unexpected error:', err);
+      alert('An unexpected error occurred.');
     }
-  })
+  }
 
   return (
     <Card className="w-full max-w-5xl my-5">
@@ -137,8 +163,8 @@ export default function ProductForm() {
                       field.onChange(value)
                       setSelectedProduct(value)
                       // Reset dependent fields
-                      form.setValue("model", "")
-                      form.setValue("serialNumber", "")
+                      // form.setValue("model", "")
+                      // form.setValue("serialNumber", "")
                       setSelectedModel("")
                     }}
                     defaultValue={field.value}
@@ -150,7 +176,7 @@ export default function ProductForm() {
                     </FormControl>
                     <SelectContent>
                       {products.map((product) => (
-                        <SelectItem key={product.id} value={product.id}>
+                        <SelectItem key={product.id} value={product.id.toString()}>
                           {product.name}
                         </SelectItem>
                       ))}
@@ -161,7 +187,7 @@ export default function ProductForm() {
               )}
             />
 
-            <FormField
+            {/* <FormField
               control={form.control}
               name="model"
               render={({ field }) => (
@@ -185,10 +211,10 @@ export default function ProductForm() {
                     <SelectContent>
                       {selectedProduct &&
                         products
-                          .find((p) => p.id === selectedProduct)
-                          ?.models.map((model) => (
-                            <SelectItem key={model.id} value={model.id}>
-                              {model.name}
+                          .find((product) => product.name === selectedProduct)
+                          ?.products.map((product: any) => (
+                            <SelectItem key={product.id} value={product.name}>
+                              {product.name}
                             </SelectItem>
                           ))}
                     </SelectContent>
@@ -222,7 +248,7 @@ export default function ProductForm() {
                   <FormMessage />
                 </FormItem>
               )}
-            />
+            /> */}
 
             <FormField
               control={form.control}
@@ -272,10 +298,12 @@ export default function ProductForm() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="A">Class A</SelectItem>
-                      <SelectItem value="B">Class B</SelectItem>
-                      <SelectItem value="C">Class C</SelectItem>
-                      <SelectItem value="D">Class D</SelectItem>
+                      <SelectItem value="X TKJ 1">X TKJ 1</SelectItem>
+                      <SelectItem value="X TKJ 2">X TKJ 2</SelectItem>
+                      <SelectItem value="XI TKJ 1">XI TKJ 1</SelectItem>
+                      <SelectItem value="XI TKJ 2">XI TKJ 2</SelectItem>
+                      <SelectItem value="XII TKJ 1">XII TKJ 1</SelectItem>
+                      <SelectItem value="XII TKJ 2">XII TKJ 2</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
