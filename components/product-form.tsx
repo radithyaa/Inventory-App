@@ -1,4 +1,5 @@
-"use client"
+"use client";
+
 
 import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
@@ -20,17 +21,19 @@ const formSchema = z.object({
   // brand: z.string().min(1, { message: "Brand is required" }),
   // model: z.string().min(1, { message: "Model is required" }),
   // serialNumber: z.string().optional(),
+
   total: z.coerce.number().positive({ message: "Total must be a positive number" }),
   name: z.string().min(1, { message: "Name is required" }),
   class: z.string().min(1, { message: "Class is required" }),
   // status: z.string().min(1, { message: "Status is required" }),
   date: z.date({ required_error: "Date is required" }),
-  comment: z.string().optional(), // Use .optional() to make it optional
-})
+  comment: z.string().optional(),
+});
 
-type FormValues = z.infer<typeof formSchema>
+type FormValues = z.infer<typeof formSchema>;
 
 export default function ProductForm() {
+
 
   const [products, setProducts] = useState<any[]>([])
   const supabase = createClient(
@@ -112,7 +115,26 @@ export default function ProductForm() {
       date: new Date(), // Set default date to current date
       comment: "",
     },
-  })
+  });
+
+  // Fetch products from Supabase
+  useEffect(() => {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || "",
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
+    );
+
+    supabase
+      .from("products")
+      .select("*")
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("Error fetching data:", error);
+        } else {
+          setProducts(data || []);
+        }
+      });
+  }, []);
 
   async function onSubmit(data: FormValues) {
     try {
@@ -195,10 +217,9 @@ export default function ProductForm() {
                   <FormLabel>Model</FormLabel>
                   <Select
                     onValueChange={(value) => {
-                      field.onChange(value)
-                      setSelectedModel(value)
-                      // Reset serial number when model changes
-                      form.setValue("serialNumber", "")
+                      field.onChange(value);
+                      setSelectedModel(value);
+                      form.setValue("serialNumber", "");
                     }}
                     defaultValue={field.value}
                     disabled={!selectedProduct}
@@ -262,7 +283,7 @@ export default function ProductForm() {
                       placeholder="Enter total amount"
                       {...field}
                       onChange={(e) => {
-                        field.onChange(e.target.value === "" ? undefined : Number(e.target.value))
+                        field.onChange(e.target.value === "" ? undefined : Number(e.target.value));
                       }}
                     />
                   </FormControl>
@@ -311,35 +332,22 @@ export default function ProductForm() {
               )}
             />
 
-            {/* <FormField
-              control={form.control}
-              name="date"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Date</FormLabel>
-                  <FormControl>
-                    <div className="p-2 border rounded-md bg-muted/20">{format(field.value, "PPP")}</div>
-                  </FormControl>
-                  <FormDescription>Current date</FormDescription>
-                </FormItem>
-              )}
-            /> */}
-
             <FormField
               control={form.control}
               name="date"
-              disabled = {true}
+              disabled={true}
               render={({ field }) => (
                 <FormItem className="flex flex-col">
                   <FormLabel>Date</FormLabel>
                   <FormControl>
-                    <div className="text-sm p-2 px-3 border rounded-md bg-muted/20 text-muted-foreground flex flex-row justify-between">{format(field.value, "PPP")} <Calendar className="size-5 opacity-90" color="gray"/></div>
+                    <div className="text-sm p-2 px-3 border rounded-md bg-muted/20 text-muted-foreground flex flex-row justify-between">
+                      {format(field.value, "PPP")} <Calendar className="size-5 opacity-90" color="gray" />
+                    </div>
                   </FormControl>
-                  {/* <FormDescription>Current date (not editable)</FormDescription> */}
                 </FormItem>
               )}
             />
-            
+
             <FormField
               control={form.control}
               name="comment"
@@ -349,7 +357,6 @@ export default function ProductForm() {
                   <FormControl>
                     <Textarea placeholder="Untuk keperluan..." className="min-h-[100px]" {...field} />
                   </FormControl>
-                  {/* <FormDescription></FormDescription> */}
                   <FormMessage />
                 </FormItem>
               )}
@@ -362,5 +369,5 @@ export default function ProductForm() {
         </Form>
       </CardContent>
     </Card>
-  )
+  );
 }
