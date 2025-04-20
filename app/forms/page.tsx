@@ -12,25 +12,17 @@ import DeployButton from "@/components/deploy-button";
 import Link from "next/link";
 import HeaderAuth from "@/components/header-auth";
 import { ThemeSwitcher } from "@/components/theme-switcher";
+import Image from "next/image";
 
 import ProductForm from "@/components/product-form";
 
 export default function Forms(){
     return(<div className="w-full flex justify-center flex-col items-center ">
-        <nav className="w-full flex justify-center border-b border-b-foreground/10 h-16">
-                <div className="w-full max-w-5xl flex justify-between items-center p-3 px-5 text-sm">
-                  <div className="flex gap-5 items-center text-lg font-semibold">
-                    <Link href={"/"}>Inventory Tkj</Link>
-                    <div className="flex items-center gap-2">
-                      {/* <DeployButton /> */}
-                    </div>
-                  </div>
-                  <div className="flex gap-2 justify-end">
-                    <HeaderAuth />
-                    <ThemeSwitcher />
-                  </div>
-                </div>
-              </nav>
     <ProductForm></ProductForm>
+    <footer className="w-full flex items-center justify-center border-t mx-auto text-center text-xs gap-8 py-8 max-h-10">
+                <p>
+                  &copy; {new Date().getFullYear()} PTech Tkj. All rights reserved.
+                </p>
+              </footer>
     </div>)
 }

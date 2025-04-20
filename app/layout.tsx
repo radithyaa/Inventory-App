@@ -7,6 +7,9 @@ import { Geist } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import Link from "next/link";
 import "./globals.css";
+import Navbar from "@/components/navbar";
+import { Button } from "@/components/ui/button";
+import { Toaster } from "@/components/ui/toaster";
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
@@ -30,26 +33,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={geistSans.className} suppressHydrationWarning>
-      <body className="bg-background text-foreground overflow-x-hidden">
+      <body className="bg-background text-foreground overflow-x-hidden h-screen ">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
-          <main className="min-h-screen flex flex-col items-center">
-            <div className="flex-1 w-full flex flex-col items-center">
-              
-              <div className="flex flex-col gap-20 w-full justify-center items-center h-full min-h-[91vh]">
-                {children}
-              </div>
-
-              <footer className="w-full flex items-center justify-center border-t mx-auto text-center text-xs gap-8 py-8 max-h-10">
-                <p>
-                  &copy; {new Date().getFullYear()} PTech Tkj. All rights reserved.
-                </p>
-              </footer>
-            </div>
+          <Navbar/>
+          <main className="flex flex-col gap-20 w-full justify-center items-center min-h-[91vh]">
+            {children}
+            <Toaster/>
           </main>
         </ThemeProvider>
       </body>

@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react"
 import { format } from "date-fns"
-import { ArrowDown, ArrowUp, BarChart3, FileText, Home, LogOut, Package, Search, Settings, Users } from "lucide-react"
+import { ArrowDown, ArrowUp, BarChart3, ChevronDown, ChevronUp, FileText, Home, LogOut, Package, Search, Settings, Users } from "lucide-react"
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -333,7 +333,7 @@ const handleStatusUpdate = async (id: string, newStatus: StatusType) => {
         alert('Error updating status:'+ data);
         return;
     }
-    alert('Status updated:'+ JSON.stringify(data));
+    // alert('Status updated:'+ JSON.stringify(data));
 
 
     setBorrowings((prevBorrowings) =>
@@ -348,6 +348,8 @@ const handleStatusUpdate = async (id: string, newStatus: StatusType) => {
   const handleStatusChange = (status: StatusType) => {
     setEditedStatus(status)
     setHasChanges(true)
+    // applyChanges()
+    // setIsDetailOpen(false)
   }
 
   // Apply changes from detail dialog
@@ -375,7 +377,7 @@ const handleStatusUpdate = async (id: string, newStatus: StatusType) => {
 return (
     <div className="flex h-screen bg-background w-screen">
         {/* Sidebar */}
-        <aside className="hidden md:flex flex-col w-64 bg-card border-r">
+        {/* <aside className="hidden md:flex flex-col w-64 bg-card border-r">
             <div className="p-4 border-b">
                 <h2 className="text-xl font-bold pl-2">Inventory</h2>
             </div>
@@ -385,12 +387,11 @@ return (
                         <Home className="mr-3 h-5 w-5" />
                         Dashboard
                     </Link>
-                    <Button variant={"ghost"} asChild>
-                    <Link href="/products" className="flex items-center px-4 py-2 text-sm font-medium rounded-md">
+                    <Link href="/products" className="flex items-center px-4 py-2 text-sm font-medium rounded-md hover:bg-muted hover:text-muted-foreground">
                         <Package className="mr-3 h-5 w-5" />
                         Products
                     </Link>
-                    </Button>
+                    
                 </nav>
             </div>
             <div className="border-t py-4">
@@ -401,28 +402,12 @@ return (
                     </Button>
                 </form>
             </div>
-        </aside>
+        </aside> */}
 
-        {/* Main content */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-            {/* Top header */}
-            <header className="bg-muted shadow">
-                <div className="px-4 sm:px-6 lg:px-8 py-4">
-                    <div className="flex items-center justify-between">
-                        <h1 className="text-2xl font-bold">Borrowings</h1>
-                        <Button asChild>
-                            <Link href="/forms">Add New</Link>
-                        </Button>
-                    </div>
-                </div>
-            </header>
-
-            {/* Main content area */}
-            <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-muted">
-                <Card>
+                <Card className="w-full sm:m-6 lg:m-8 rounded-none sm:rounded-md">
                     <CardHeader>
-                        <CardTitle>Borrowing Records</CardTitle>
-                        <CardDescription>Manage and track all equipment borrowings</CardDescription>
+                        <CardTitle>Data Peminjaman</CardTitle>
+                        {/* <CardDescription>Manage and track all equipment borrowings</CardDescription> */}
                     </CardHeader>
                     <CardContent>
                         {/* Filters */}
@@ -456,25 +441,34 @@ return (
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead onClick={() => requestSort("product")}>
+                                        <TableHead
+                                            onClick={() => requestSort("product")}
+                                            className=""
+                                        >
                                             Product
-                                            {getSortDirection("product") === "ascending" && <ArrowUp className="inline ml-1 h-4 w-4" />}
-                                            {getSortDirection("product") === "descending" && <ArrowDown className="inline ml-1 h-4 w-4" />}
+                                            {getSortDirection("product") === "ascending" && <ChevronUp className="inline  ml-1 size-4 text-muted-foreground" />}
+                                            {getSortDirection("product") === "descending" && <ChevronDown className="inline ml-1 size-4 text-muted-foreground" />}
                                         </TableHead>
-                                        <TableHead onClick={() => requestSort("borrower")}>
+                                        <TableHead className="" onClick={() => requestSort("borrower")}>
                                             Name
-                                            {getSortDirection("borrower") === "ascending" && <ArrowUp className="inline ml-1 h-4 w-4" />}
-                                            {getSortDirection("borrower") === "descending" && <ArrowDown className="inline ml-1 h-4 w-4" />}
+                                            {getSortDirection("borrower") === "ascending" && <ChevronUp className="inline  ml-1 size-4 text-muted-foreground" />}
+                                            {getSortDirection("borrower") === "descending" && <ChevronDown className="inline  ml-1 size-4 text-muted-foreground" />}
                                         </TableHead>
-                                        <TableHead onClick={() => requestSort("class")}>
+                                        <TableHead className="" onClick={() => requestSort("class")}>
                                             Class
-                                            {getSortDirection("class") === "ascending" && <ArrowUp className="inline ml-1 h-4 w-4" />}
-                                            {getSortDirection("class") === "descending" && <ArrowDown className="inline ml-1 h-4 w-4" />}
+                                            {getSortDirection("class") === "ascending" && <ChevronUp className="inline  ml-1 size-4 text-muted-foreground" />}
+                                            {getSortDirection("class") === "descending" && <ChevronDown className="inline  ml-1 size-4 text-muted-foreground" />}
                                         </TableHead>
-                                        <TableHead onClick={() => requestSort("borrowDate")}>
+                                        <TableHead className="" onClick={() => requestSort("total")}>
+                                            total
+                                            {getSortDirection("total") === "ascending" && <ChevronUp className="inline  ml-1 size-4 text-muted-foreground" />}
+                                            {getSortDirection("total") === "descending" && <ChevronDown className="inline  ml-1 size-4 text-muted-foreground" />}
+                                        </TableHead>
+                                        
+                                        <TableHead className="" onClick={() => requestSort("borrowDate")}>
                                             Date
-                                            {getSortDirection("borrowDate") === "ascending" && <ArrowUp className="inline ml-1 h-4 w-4" />}
-                                            {getSortDirection("borrowDate") === "descending" && <ArrowDown className="inline ml-1 h-4 w-4" />}
+                                            {getSortDirection("borrowDate") === "ascending" && <ChevronUp className="inline  ml-1 size-4 text-muted-foreground" />}
+                                            {getSortDirection("borrowDate") === "descending" && <ChevronDown className="inline  ml-1 size-4 text-muted-foreground" />}
                                         </TableHead>
                                         <TableHead>Status</TableHead>
                                     </TableRow>
@@ -486,6 +480,7 @@ return (
                                                 <TableCell onClick={() => handleRowClick(borrowing)}>{borrowing.product_id.name.split(" ")[0]}</TableCell>
                                                 <TableCell onClick={() => handleRowClick(borrowing)}>{borrowing.name}</TableCell>
                                                 <TableCell onClick={() => handleRowClick(borrowing)}>{borrowing.class}</TableCell>
+                                                <TableCell onClick={() => handleRowClick(borrowing)}>{borrowing.total}</TableCell>
                                                 <TableCell onClick={() => handleRowClick(borrowing)}>
                                                     {format(borrowing.created_at, "MMM dd, yyyy")}
                                                 </TableCell>
@@ -508,15 +503,34 @@ return (
                         </div>
                     </CardContent>
                 </Card>
-            </main>
-        </div>
+
+        {/* Main content */}
+        {/* <div className="flex-1 flex flex-col sm:p-6 "> */}
+            {/* Top header */}
+            {/* <header className="bg-muted shadow">
+                <div className="px-4 sm:px-6 lg:px-8 py-4">
+                    <div className="flex items-center justify-between">
+                        <h1 className="text-2xl font-bold">Peminjaman</h1>
+                        <Button asChild>
+                            <Link href="/forms">Add New</Link>
+                        </Button>
+                    </div>
+                </div>
+            </header> */}
+            
+
+            {/* Main content area */}
+            {/* <main className="flex-1 overflow-y-auto sm:p-6 lg:p-10 bg-muted">
+                
+            </main> */}
+        {/* </div> */}
 
         {/* Detail Dialog */}
         <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Borrowing Details</DialogTitle>
-                    <DialogDescription>Complete information about this borrowing record</DialogDescription>
+                    <DialogTitle className="text-center">Detail Peminjaman</DialogTitle>
+                    {/* <DialogDescription>Complete information about this borrowing record</DialogDescription> */}
                 </DialogHeader>
 
                 {selectedBorrowing && (
@@ -534,12 +548,16 @@ return (
                             <span className="col-span-3">{selectedBorrowing.class}</span>
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
+                            <span className="text-sm font-medium">Total:</span>
+                            <span className="col-span-3">{selectedBorrowing.total}</span>
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
                             <span className="text-sm font-medium">Borrow:</span>
-                            <span className="text-nowrap">{format(selectedBorrowing.updated_at, "dd MMMM yyyy, hh:mm")}</span>
+                            <span className="text-nowrap">{format(selectedBorrowing.created_at, `dd MMMM yyyy, hh:mm `)}</span>
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
                             <span className="text-sm font-medium">Return:</span>
-                            <span className="text-nowrap">{format(selectedBorrowing.updated_at, "dd MMMM yyyy, hh:mm")}</span>
+                            <span className="text-nowrap">{selectedBorrowing.updated_at? (format(selectedBorrowing.updated_at, "dd MMMM yyyy, hh:mm")) : ("-")}</span>
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
                             <span className="text-sm font-medium">Status:</span>

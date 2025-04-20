@@ -13,8 +13,10 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { Calendar } from "lucide-react"
+import { Calendar, CheckCircle, NotebookPen, Terminal } from "lucide-react"
 import { comment } from "postcss"
+import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
+import { toast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
   product: z.string().min(1, { message: "Product is required" }),
@@ -101,6 +103,7 @@ export default function ProductForm() {
   const [selectedProduct, setSelectedProduct] = useState<string>("")
   const [selectedModel, setSelectedModel] = useState<string>("")
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isSucces, setIsSuccess] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -136,6 +139,10 @@ export default function ProductForm() {
       });
   }, []);
 
+  const showToast = () => {
+    
+  };
+
   async function onSubmit(data: FormValues) {
     try {
       const { error } = await supabase
@@ -154,10 +161,14 @@ export default function ProductForm() {
 
       if (error) {
         console.error('Error inserting form:', error.message);
-        alert('Failed to submit the form. Please check your input.');
+        alert('Failed to submit the form. Please check your input. err');
       } else {
-        console.log('Form inserted successfully:', data);
-        alert('Form submitted successfully!');
+        setIsSuccess(true)
+        toast({
+          description: "Sukses menyimpan data!",
+          duration: 2500,
+        });
+        form.resetField("name");
       }
     } catch (err) {
       console.error('Unexpected error:', err);
@@ -166,10 +177,12 @@ export default function ProductForm() {
   }
 
   return (
-    <Card className="w-full max-w-5xl my-5">
+    <div className="flex m-0 bg-background w-screen">
+    
+    <Card className=" w-full m:8 sm:m-6 lg:m-8 rounded-none sm:rounded-md">
       <CardHeader>
-        <CardTitle className="text-2xl">Product Form</CardTitle>
-        <CardDescription>Please fill in all the required fields below.</CardDescription>
+        <CardTitle className="text-2xl">Form Peminjaman</CardTitle>
+        {/* <CardDescription>Please fill in all the required fields below.</CardDescription> */}
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -334,22 +347,6 @@ export default function ProductForm() {
 
             <FormField
               control={form.control}
-              name="date"
-              disabled={true}
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Date</FormLabel>
-                  <FormControl>
-                    <div className="text-sm p-2 px-3 border rounded-md bg-muted/20 text-muted-foreground flex flex-row justify-between">
-                      {format(field.value, "PPP")} <Calendar className="size-5 opacity-90" color="gray" />
-                    </div>
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
               name="comment"
               render={({ field }) => (
                 <FormItem>
@@ -362,6 +359,22 @@ export default function ProductForm() {
               )}
             />
 
+              <FormField
+                control={form.control}
+                name="date"
+                disabled={true}
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Date</FormLabel>
+                    <FormControl>
+                      <div className="text-sm p-2 px-3 border rounded-md bg-muted/20 text-muted-foreground flex flex-row justify-between">
+                        {format(field.value, "PPP")} <Calendar className="size-5 opacity-90" color="gray" />
+                      </div>
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
             <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? "Submitting..." : "Submit"}
             </Button>
@@ -369,5 +382,6 @@ export default function ProductForm() {
         </Form>
       </CardContent>
     </Card>
+    </div>
   );
 }
