@@ -131,11 +131,11 @@ export default function ProductsTable() {
   }
 
   return (
-    <div className="flex bg-background w-screen">
+    <div className="flex bg-transparent w-screen justify-center">
       {/* Sidebar */}
 
       {/* Main content area */}
-      <Card className="w-full sm:m-6 lg:m-8 rounded-none sm:rounded-md ">
+      <Card className="w-full m:8 sm:m-6 lg:m-8 max-w-7xl rounded-none sm:rounded-md ">
         <CardHeader className="flex flex-row items-center justify-between sm">
           <div>
             <CardTitle>Products</CardTitle>

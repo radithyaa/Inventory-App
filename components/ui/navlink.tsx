@@ -11,7 +11,7 @@ export default function NavLink() {
     return(<>
       <Button
         variant={"link"}
-        className={`hidden md:inline-flex hover:bg-none text-md ${
+        className={`hidden md:inline-flex hover:bg-none text-md transition-all duration-150 ${
           isActive("/forms") ? "text-primary" : "text-muted-foreground"
         }`}
         asChild
@@ -20,8 +20,8 @@ export default function NavLink() {
       </Button>
     
       <Button
-        variant={"link"}
-        className={`hidden md:inline-flex hover:bg-none text-md ${
+        variant={"link"} 
+        className={`hidden md:inline-flex hover:bg-none text-md duration-150 ${
           isActive("/dashboard") ? "text-primary" : "text-muted-foreground"
         }`}
         asChild
@@ -31,7 +31,7 @@ export default function NavLink() {
 
       <Button
         variant={"link"}
-        className={`hidden md:inline-flex hover:bg-none text-md ${
+        className={`hidden md:inline-flex hover:bg-none text-md duration-150 ${
           isActive("/products") ? "text-primary" : "text-muted-foreground"
         }`}
         asChild

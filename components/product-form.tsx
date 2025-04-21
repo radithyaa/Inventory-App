@@ -16,21 +16,26 @@ import { Calendar } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 // Define the schema for form validation using Zod
-const formSchema = z.object({
-  product: z.string().min(1, { message: "Product is required" }),
-  total: z.coerce.number().positive({ message: "Total must be a positive number" }),
-  name: z.string().min(1, { message: "Name is required" }),
-  class: z.string().min(1, { message: "Class is required" }),
-  date: z.date({ required_error: "Date is required" }),
-  comment: z.string().optional(),
-});
 
-type FormValues = z.infer<typeof formSchema>;
 
 export default function ProductForm() {
   const [products, setProducts] = useState<any[]>([]); // State to store fetched products
   const [isSubmitting, setIsSubmitting] = useState(false); // State to manage form submission status
   const [isSuccess, setIsSuccess] = useState(false); // State to track success status
+
+  const formSchema = z.object({
+    product: z.string().min(1, { message: "Product is required" }),
+    total: z
+      .coerce
+      .number()
+      .positive({ message: "Total must be a positive number" }),
+    name: z.string().min(1, { message: "Name is required" }),
+    class: z.string().min(1, { message: "Class is required" }),
+    date: z.date({ required_error: "Date is required" }),
+    comment: z.string().optional(),
+  });
+  
+  type FormValues = z.infer<typeof formSchema>;
 
   // Initialize Supabase client
   const supabase = createClient(
@@ -95,8 +100,8 @@ export default function ProductForm() {
   }
 
   return (
-    <div className="flex m-0 bg-background w-screen">
-      <Card className="w-full m:8 sm:m-6 lg:m-8 rounded-none sm:rounded-md">
+    <div className="flex m-0 bg-transparent justify-center w-screen ">
+      <Card className="w-full m:8 sm:m-6 lg:m-8 rounded-none sm:rounded-md max-w-7xl">
         <CardHeader>
           <CardTitle className="text-2xl">Form Peminjaman</CardTitle>
           <CardDescription>Form untuk meminjam alat inventaris Tkj</CardDescription>

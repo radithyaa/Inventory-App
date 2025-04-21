@@ -375,7 +375,7 @@ const handleStatusUpdate = async (id: string, newStatus: StatusType) => {
     return allowedStatuses.filter((status) => status !== currentStatus)
   }
 return (
-    <div className="flex h-screen bg-background w-screen">
+    <div className="flex h-screen bg-transparent justify-center w-screen">
         {/* Sidebar */}
         {/* <aside className="hidden md:flex flex-col w-64 bg-card border-r">
             <div className="p-4 border-b">
@@ -404,7 +404,7 @@ return (
             </div>
         </aside> */}
 
-                <Card className="w-full sm:m-6 lg:m-8 rounded-none sm:rounded-md">
+                <Card className="w-full sm:m-6 lg:m-8 rounded-none max-w-7xl sm:rounded-md">
                     <CardHeader>
                         <CardTitle>Data Peminjaman</CardTitle>
                         <CardDescription>Seluruh Data Peminjaman Inventory Tkj</CardDescription>

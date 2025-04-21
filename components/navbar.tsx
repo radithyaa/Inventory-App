@@ -12,8 +12,8 @@ import CustomSheet from "./custom-sheet"
         < div className="container mx-auto flex justify-between items-center h-full px-3 md:px-4 lg:px-6">
           <div className="flex items-center space-x-4">
             <div className="flex items-center">
-          <Image className="self-center mb-2"
-            src="/logo2.png" alt="logo" width={"50"} height={"50"} />
+          <Image className="self-center "
+            src="/logo.png" alt="logo" width={"40"} height={"40"} />
           <Link href="/" className="text-md font-semibold flex flex-row items-center gap-2 text-primary">
             Inventory Tkj
           </Link>

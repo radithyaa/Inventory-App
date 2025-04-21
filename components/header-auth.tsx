@@ -13,7 +13,7 @@ export default async function AuthButton() {
   return user ? (
     <div className=" items-center gap-4 hidden sm:flex">
       <form action={signOutAction}>
-        <Button type="submit" variant={"outline"}>
+        <Button type="submit" variant={"outline"} className="border-primary text-primary  hover:text-red">
           Sign out
         </Button>
       </form>
