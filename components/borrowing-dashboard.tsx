@@ -407,7 +407,7 @@ return (
                 <Card className="w-full sm:m-6 lg:m-8 rounded-none sm:rounded-md">
                     <CardHeader>
                         <CardTitle>Data Peminjaman</CardTitle>
-                        {/* <CardDescription>Manage and track all equipment borrowings</CardDescription> */}
+                        <CardDescription>Seluruh Data Peminjaman Inventory Tkj</CardDescription>
                     </CardHeader>
                     <CardContent>
                         {/* Filters */}
@@ -576,12 +576,12 @@ return (
                             </div>
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
-                            <span className="text-sm font-medium">Comment:</span>
+                            <span className="text-sm font-medium">Description:</span>
                             <span className="col-span-3">
                                 {selectedBorrowing.comment ? (
                                     selectedBorrowing.comment
                                 ) : (
-                                    <em className="text-muted-foreground">No comment provided</em>
+                                    <span className="text-muted-foreground">No Description</span>
                                 )}
                             </span>
                         </div>

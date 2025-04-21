@@ -1,11 +1,11 @@
 "use client"
 
+// Importing necessary libraries and components
 import { useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { Plus, Search } from "lucide-react"
-
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -22,23 +22,27 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { createClient } from "@supabase/supabase-js"
 import type { Product } from "@/types/database"
 
-// Schema para form tambah produk - diperbarui untuk menggunakan total_stock
+// Schema for form validation using Zod
 const productSchema = z.object({
-  name: z.string().min(1, { message: "Product name is required" }),
-  total_stock: z.coerce.number().int().positive({ message: "Total stock must be a positive number" }),
+  name: z.string().min(1, { message: "Product name is required" }), // Product name must not be empty
+  total_stock: z.coerce.number().int().positive({ message: "Total stock must be a positive number" }), // Total stock must be a positive integer
 })
 
+// Type inference for form values
 type ProductFormValues = z.infer<typeof productSchema>
 
 export default function ProductsTable() {
-  const [products, setProducts] = useState<Product[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  // State variables
+  const [products, setProducts] = useState<Product[]>([]) // Stores the list of products
+  const [isLoading, setIsLoading] = useState(true) // Loading state for fetching products
+  const [isDialogOpen, setIsDialogOpen] = useState(false) // State to control the dialog visibility
+  const [searchTerm, setSearchTerm] = useState("") // Search term for filtering products
+  const [isSubmitting, setIsSubmitting] = useState(false) // State for form submission
 
+  // Initialize Supabase client
   const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
 
+  // React Hook Form setup with Zod validation
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
     defaultValues: {
@@ -47,12 +51,12 @@ export default function ProductsTable() {
     },
   })
 
-  // Fetch products from database and calculate available stock
+  // Function to fetch products and calculate available stock
   const fetchProducts = async () => {
     try {
       setIsLoading(true)
 
-      // Fetch all products
+      // Fetch all products from the "products" table
       const { data: productsData, error: productsError } = await supabase.from("products").select("*").order("id")
 
       if (productsError) {
@@ -61,11 +65,10 @@ export default function ProductsTable() {
       }
 
       // Fetch active borrowings to calculate available stock
-      // Usando los valores correctos del enum: "borrowed" y "pending" en lugar de "waiting" y "active"
       const { data: borrowingsData, error: borrowingsError } = await supabase
         .from("forms")
         .select("product_id, total")
-        .in("status", ["borrowed", "pending"]) // Solo contar items que no han sido devueltos
+        .in("status", ["borrowed", "pending"]) // Only count items that are not returned
 
       if (borrowingsError) {
         console.error("Error fetching borrowings:", borrowingsError)
@@ -74,14 +77,9 @@ export default function ProductsTable() {
 
       // Calculate available stock for each product
       const productsWithAvailableStock = productsData.map((product) => {
-        // Find all borrowings for this product
-        const productBorrowings = borrowingsData.filter((b) => b.product_id === product.id)
-
-        // Sum up the total borrowed items
-        const totalBorrowed = productBorrowings.reduce((sum, borrowing) => sum + borrowing.total, 0)
-
-        // Calculate available stock
-        const availableStock = Math.max(0, product.total_stock - totalBorrowed)
+        const productBorrowings = borrowingsData.filter((b) => b.product_id === product.id) // Filter borrowings for the product
+        const totalBorrowed = productBorrowings.reduce((sum, borrowing) => sum + borrowing.total, 0) // Sum up borrowed items
+        const availableStock = Math.max(0, product.total_stock - totalBorrowed) // Calculate available stock
 
         return {
           ...product,
@@ -97,20 +95,20 @@ export default function ProductsTable() {
     }
   }
 
+  // Fetch products on component mount
   useEffect(() => {
     fetchProducts()
   }, [])
 
-  // Filter products based on search term
+  // Filter products based on the search term
   const filteredProducts = products.filter((product) => product.name.toLowerCase().includes(searchTerm.toLowerCase()))
 
-  // Handle form submission
+  // Handle form submission to add a new product
   const onSubmit = async (data: ProductFormValues) => {
     setIsSubmitting(true)
 
     try {
-
-      // Insert new product
+      // Insert new product into the "products" table
       const { error } = await supabase.from("products").insert([data])
 
       if (error) {
@@ -119,11 +117,9 @@ export default function ProductsTable() {
         return
       }
 
-      // Reset form and close dialog
+      // Reset form, close dialog, and refresh product list
       form.reset()
       setIsDialogOpen(false)
-
-      // Refresh products list
       fetchProducts()
       alert("Product added successfully!")
     } catch (error) {
@@ -138,78 +134,75 @@ export default function ProductsTable() {
     <div className="flex bg-background w-screen">
       {/* Sidebar */}
 
-        {/* Main content area */}
-        <Card className="w-full sm:m-6 lg:m-8 rounded-none sm:rounded-md ">
-            <CardHeader className="flex flex-row items-center justify-between sm">
-              <div>
-                <CardTitle>Products</CardTitle>
-                <CardDescription>Manage your inventory products</CardDescription>
-              </div>
-              <Button size={"sm"} onClick={() => setIsDialogOpen(true)}>
-                <Plus className="mr-2 h-4 w-4" /> Add Product
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {/* Search */}
-              <div className="relative mb-6">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-                <Input
-                  type="text"
-                  placeholder="Search products..."
-                  className="pl-8"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
+      {/* Main content area */}
+      <Card className="w-full sm:m-6 lg:m-8 rounded-none sm:rounded-md ">
+        <CardHeader className="flex flex-row items-center justify-between sm">
+          <div>
+            <CardTitle>Products</CardTitle>
+            <CardDescription>Seluruh data produk inventaris Tkj</CardDescription>
+          </div>
+          <Button size={"sm"} onClick={() => setIsDialogOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" /> Add Product
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {/* Search input */}
+          <div className="relative mb-6">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+            <Input
+              type="text"
+              placeholder="Search products..."
+              className="pl-8"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
 
-              {/* Products Table */}
-              <div className="border rounded-md ">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>ID</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Total Stock</TableHead>
-                      <TableHead>Available Stock</TableHead>
+          {/* Products Table */}
+          <div className="border rounded-md ">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>No</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Total Stock</TableHead>
+                  <TableHead>Available Stock</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="h-24 text-center">
+                      Loading products...
+                    </TableCell>
+                  </TableRow>
+                ) : filteredProducts.length > 0 ? (
+                  filteredProducts.map((product) => (
+                    <TableRow key={product.id}>
+                        <TableCell>{products.findIndex((p) => p.id === product.id) + 1}</TableCell>
+                      <TableCell>{product.name}</TableCell>
+                      <TableCell>{product.total_stock}</TableCell>
+                      <TableCell>
+                        <span className={product.available_stock === 0 ? " text-primary font-medium" : ""}>
+                          {product.available_stock}
+                        </span>
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoading ? (
-                      <TableRow>
-                        <TableCell colSpan={4} className="h-24 text-center">
-                          Loading products...
-                        </TableCell>
-                      </TableRow>
-                    ) : filteredProducts.length > 0 ? (
-                      filteredProducts.map((product) => (
-                        <TableRow key={product.id}>
-                          <TableCell>{product.id}</TableCell>
-                          <TableCell>{product.name}</TableCell>
-                          <TableCell>{product.total_stock}</TableCell>
-                          <TableCell>
-                            <span className={product.available_stock === 0 ? " text-primary font-medium" : ""}>
-                              {product.available_stock}
-                            </span>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={4} className="h-24 text-center">
-                          No products found.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        {/* <main className="flex-1 overflow-y-auto sm:p-6 lg:p-8">
-          
-        </main> */}
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={4} className="h-24 text-center">
+                      No products found.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
 
-      {/* Add Product Dialog */}
+      {/* Dialog for adding a new product */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -219,6 +212,7 @@ export default function ProductsTable() {
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              {/* Product Name Field */}
               <FormField
                 control={form.control}
                 name="name"
@@ -233,6 +227,7 @@ export default function ProductsTable() {
                 )}
               />
 
+              {/* Total Stock Field */}
               <FormField
                 control={form.control}
                 name="total_stock"
@@ -255,6 +250,7 @@ export default function ProductsTable() {
                 )}
               />
 
+              {/* Submit Button */}
               <DialogFooter>
                 <Button type="submit" disabled={isSubmitting}>
                   {isSubmitting ? "Adding..." : "Apply"}

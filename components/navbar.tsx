@@ -1,23 +1,8 @@
-import {
-    NavigationMenu,
-    NavigationMenuContent,
-    NavigationMenuIndicator,
-    NavigationMenuItem,
-    NavigationMenuLink,
-    NavigationMenuList,
-    NavigationMenuTrigger,
-    NavigationMenuViewport,
-  } from "@/components/ui/navigation-menu"
 import Link from "next/link"
-import { Button } from "./ui/button"
 import HeaderAuth from "./header-auth"
 import { ThemeSwitcher } from "./theme-switcher"
 import NavLink from "./ui/navlink"
 import Image from "next/image"
-import { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from "./ui/sheet"
-import { Label } from "./ui/label"
-import { Input } from "./ui/input"
-import { Menu } from "lucide-react"
 import CustomSheet from "./custom-sheet"
   
 
@@ -34,10 +19,10 @@ import CustomSheet from "./custom-sheet"
           </Link>
           </div>
           </div>
-          <div className="self-center flex gap-32">
+          <div className="self-center flex lg:gap-56 md:gap-20 sm:gap-20">
           <NavLink></NavLink>
           </div>
-          <div className=" hidden sm:flex items-center md:space-x-2 lg:space-x-2">
+          <div className=" hidden sm:flex items-center md:space-x-2 lg:space-x-2 space-x-1">
             
           <HeaderAuth />
           <ThemeSwitcher />

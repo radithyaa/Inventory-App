@@ -14,20 +14,20 @@ export default async function CustomSheet(){
     
     return (
         <Sheet>
-            <SheetTrigger><Button variant={"outline"}><Menu/></Button></SheetTrigger>
+            <SheetTrigger asChild><Button variant={"outline"}><Menu/></Button></SheetTrigger>
             <SheetContent side={"bottom"} className="px-0" >
             <SheetHeader className="hidden">Menu</SheetHeader>
                 {/* <div className="flex flex-col py-4 w-screen justify-center"> */}
-                <Button variant={"ghost"} className="w-full rounded-none   border-muted mt-4 py-5"><Link href="/forms" className="py-4">Form</Link></Button>
-                <Button variant={"ghost"} className="w-full rounded-none   border-muted py-6"><Link href="/dashboard">Dashboard</Link></Button>
-                <Button variant={"ghost"} className="w-full rounded-none   border-muted py-6"><Link href="/products">Products</Link></Button>
+                <Button variant={"ghost"} className="w-full rounded-none   border-muted mt-4 py-4"><Link href="/forms">Form</Link></Button>
+                <Button variant={"ghost"} className="w-full rounded-none   border-muted "><Link href="/dashboard">Dashboard</Link></Button>
+                <Button variant={"ghost"} className="w-full rounded-none   border-muted"><Link href="/products">Products</Link></Button>
                 {user ? (
                 <div></div>) : (
-                    <Button variant={"ghost"} className="w-full rounded-none   border-muted py-6"><Link href="/sign-in">Sign In</Link></Button> )}
-                <DarkModeSheet/>
+                    <Button variant={"ghost"} className="w-full rounded-none   border-muted"><Link href="/sign-in">Sign In</Link></Button> )}
                 {user ? (
-                <Button variant={"ghost"} className="w-full rounded-none   border-muted py-6" onClick={signOutAction}>Sign Out</Button>) : (
-                    <div></div>)}
+                    <Button variant={"ghost"} className="w-full rounded-none   border-muted" onClick={signOutAction}>Sign Out</Button>) : (
+                        <div></div>)}
+                        <DarkModeSheet/>
             </SheetContent>
           </Sheet>
     )
