@@ -5,7 +5,7 @@ import { useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { Plus, Search } from "lucide-react"
+import { PenLine, Plus, Search, Trash, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -17,15 +17,20 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { createClient } from "@supabase/supabase-js"
 import type { Product } from "@/types/database"
+import { toast } from "@/hooks/use-toast"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "./ui/alert-dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
 
 // Schema for form validation using Zod
 const productSchema = z.object({
   name: z.string().min(1, { message: "Product name is required" }), // Product name must not be empty
   total_stock: z.coerce.number().int().positive({ message: "Total stock must be a positive number" }), // Total stock must be a positive integer
+  status: z.enum(["available", "lost", "checked out", "disposed", "under audit", "in maintenance"]), // Status must be one of the specified strings
 })
 
 // Type inference for form values
@@ -48,6 +53,7 @@ export default function ProductsTable() {
     defaultValues: {
       name: "",
       total_stock: 1,
+      status: "available"
     },
   })
 
@@ -87,6 +93,8 @@ export default function ProductsTable() {
         }
       })
 
+      
+
       setProducts(productsWithAvailableStock || [])
     } catch (error) {
       console.error("Error fetching products:", error)
@@ -100,6 +108,21 @@ export default function ProductsTable() {
     fetchProducts()
   }, [])
 
+  const handleRemove = async function (id: number){
+    const {data, error} = await supabase
+    .from('products')
+    .delete()
+    .eq('id', id)
+
+    if (error) {
+      console.error('Error menghapus produk:', error)
+      return null
+    }
+  
+    setProducts(products.filter((product) => product.id !== id))
+
+  }
+
   // Filter products based on the search term
   const filteredProducts = products.filter((product) => product.name.toLowerCase().includes(searchTerm.toLowerCase()))
 
@@ -109,19 +132,52 @@ export default function ProductsTable() {
 
     try {
       // Insert new product into the "products" table
-      const { error } = await supabase.from("products").insert([data])
+      // Check if a product with the same name already exists
+      const { data: existingProduct, error: fetchError } = await supabase
+        .from("products")
+        .select("*")
+        .ilike("name", data.name)
+        .single()
 
-      if (error) {
-        console.error("Error adding product:", error)
-        alert("Error adding product. Please try again.")
+      if (fetchError && fetchError.code !== "PGRST116") {
+        // Handle unexpected errors (ignore "PGRST116" which means no rows found)
+        console.error("Error checking existing product:", fetchError)
+        alert("Error checking existing product. Please try again.")
         return
+      }
+
+      if (existingProduct) {
+        // If product exists, update its total stock
+        const { error: updateError } = await supabase
+          .from("products")
+          .update({ total_stock: existingProduct.total_stock + data.total_stock })
+          .eq("id", existingProduct.id)
+
+        if (updateError) {
+          console.error("Error updating product stock:", updateError)
+          alert("Error updating product stock. Please try again.")
+          return
+        }
+      } else {
+        // If product does not exist, insert a new product
+        const { error: insertError } = await supabase.from("products").insert([data])
+
+        if (insertError) {
+          console.error("Error adding product:", insertError)
+          alert("Error adding product. Please try again.")
+          return
+        }
       }
 
       // Reset form, close dialog, and refresh product list
       form.reset()
       setIsDialogOpen(false)
       fetchProducts()
-      alert("Product added successfully!")
+      toast({
+        description: "Sukses menambahkan data!",
+        duration: 2500,
+      });
+      // alert("Product added successfully!")
     } catch (error) {
       console.error("Error adding product:", error)
       alert("Error adding product. Please try again.")
@@ -167,12 +223,14 @@ export default function ProductsTable() {
                   <TableHead>Name</TableHead>
                   <TableHead>Total Stock</TableHead>
                   <TableHead>Available Stock</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-center">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="h-24 text-center">
+                    <TableCell colSpan={5} className="h-24 text-center">
                       Loading products...
                     </TableCell>
                   </TableRow>
@@ -180,18 +238,163 @@ export default function ProductsTable() {
                   filteredProducts.map((product) => (
                     <TableRow key={product.id}>
                         <TableCell>{products.findIndex((p) => p.id === product.id) + 1}</TableCell>
-                      <TableCell>{product.name}</TableCell>
+                      {product.name.charAt(0).toUpperCase() + product.name.slice(1)}
                       <TableCell>{product.total_stock}</TableCell>
                       <TableCell>
-                        <span className={product.available_stock === 0 ? " text-primary font-medium" : ""}>
+                        <span>
                           {product.available_stock}
                         </span>
+                      </TableCell>
+                      <TableCell>{product.available_stock === 0? "Checked Out": product.status.charAt(0).toUpperCase() + product.status.slice(1)}</TableCell>
+                      <TableCell className="flex text-center items-center content-center justify-center gap-1 md:gap-4">
+                          {/* Dialog for editing product */}
+                      <Dialog>
+                        <DialogTrigger asChild><Button variant={"outline"} className="px-3"
+                                                onClick={() => {
+                                                  form.reset({
+                                                    name: product.name,
+                                                    total_stock: product.total_stock,
+                                                    status: product.status,
+                                                  })
+                                                }}
+                                              ><PenLine size={"18px"}/></Button></DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Edit Product</DialogTitle>
+                            <DialogDescription>
+                              Edit Detail Product
+                            </DialogDescription>
+                          </DialogHeader>
+                          <Form {...form}>
+                            <form onSubmit={form.handleSubmit(async (data) => {
+                              setIsSubmitting(true);
+                              try {
+                              const { error } = await supabase
+                                .from("products")
+                                .update(data)
+                                .eq("id", product.id);
+
+                              if (error) {
+                                console.error("Error updating product:", error);
+                                console.error(data)
+                                toast({
+                                description: "Gagal memperbarui data!",
+                                duration: 2500,
+                                });
+                                return;
+                              }
+
+                              toast({
+                                description: "Sukses memperbarui data!",
+                                duration: 2500,
+                              });
+
+                              fetchProducts(); // Refresh product list
+                              setIsDialogOpen(false); // Close dialog
+                              } catch (error) {
+                              console.error("Error updating product:", error);
+                              } finally {
+                              setIsSubmitting(false);
+                              }
+                            })} className="space-y-4">
+                              {/* Product Name Field */}
+                              <FormField
+                              control={form.control}
+                              name="name"
+                              render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Product Name</FormLabel>
+                                <FormControl>
+                                  <Input
+                                  placeholder="Enter product name"
+                                  defaultValue={product.name}
+                                  {...field}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                              )}
+                              />
+
+                              {/* Total Stock Field */}
+                              <FormField
+                              control={form.control}
+                              name="total_stock"
+                              render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Total Stock</FormLabel>
+                                <FormControl>
+                                  <Input
+                                  type="number"
+                                  placeholder="Enter total stock amount"
+                                  defaultValue={product.total_stock}
+                                  {...field}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                              )}
+                              />
+
+                              {/* Select status field */}
+                              <FormField
+                              control={form.control}
+                              name="status"
+                              render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Status</FormLabel>
+                                <FormControl>
+                                  <Select onValueChange={field.onChange} defaultValue={product.status}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select status" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="lost">Lost</SelectItem>
+                                    <SelectItem value="available">Available</SelectItem>
+                                    <SelectItem value="checked out">Checked Out</SelectItem>
+                                    <SelectItem value="disposed">Disposed</SelectItem>
+                                    <SelectItem value="under audit">Under audit</SelectItem>
+                                    <SelectItem value="in maintenance">In Maintenance</SelectItem>
+                                  </SelectContent>
+                                  </Select>
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                              )}
+                              />
+
+                              {/* Submit Button */}
+                              <DialogFooter>
+                              <Button type="submit" disabled={isSubmitting}>
+                                {isSubmitting ? "Changing..." : "Apply"}
+                              </Button>
+                              </DialogFooter>
+                            </form>
+                          </Form>
+                        </DialogContent>
+                      </Dialog>
+
+                            <AlertDialog>         
+                            <AlertDialogTrigger asChild ><Button variant={"outline"} className="px-3"><Trash size={"18px"}/></Button></AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Apakah anda serius?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Tindakan ini tidak dapat dikembalikan. Ini akan menghapus permanen data ini dan tidak akan pernah kembali lagi.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={()=> handleRemove(product.id)}>Continue</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>                       
                       </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={4} className="h-24 text-center">
+                    <TableCell colSpan={5} className="h-24 text-center">
                       No products found.
                     </TableCell>
                   </TableRow>
@@ -249,7 +452,6 @@ export default function ProductsTable() {
                   </FormItem>
                 )}
               />
-
               {/* Submit Button */}
               <DialogFooter>
                 <Button type="submit" disabled={isSubmitting}>

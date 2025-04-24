@@ -3,6 +3,7 @@ export type Product = {
   name: string
   total_stock: number
   available_stock?: number // Stok yang tersedia setelah dikurangi peminjaman
+  status: "available" | "lost" | "checked out" | "disposed" | "under audit" | "in maintenance"
 }
 
 export type BorrowingDisplay = {
