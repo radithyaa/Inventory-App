@@ -1,4 +1,4 @@
-View the project at pengkolantech.site.
+View the project at (pengkolantech.site)
 
 ## Getting Started
 
