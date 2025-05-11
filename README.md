@@ -1,4 +1,4 @@
-View the project at (pengkolantech.site)
+View the project at HTTPS://pengkolantech.site
 
 ## Getting Started
 
