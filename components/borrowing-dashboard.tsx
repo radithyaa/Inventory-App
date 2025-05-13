@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import { format, set } from "date-fns"
-import {  ChevronDown, ChevronUp, FileText, Home, LogOut, Package, Search, Settings, Users } from "lucide-react"
+import { format } from "date-fns"
+import {  ChevronDown, ChevronUp, Search} from "lucide-react"
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -56,7 +56,7 @@ export default function BorrowingDashboard() {
   const [editedStatus, setEditedStatus] = useState<StatusType>("pending")
   const [hasChanges, setHasChanges] = useState(false)
   const [page , setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(15)
+  const [pageSize] = useState(15)
   const [totalCount, setTotalCount] = useState(0)
 
   useEffect(() => {
@@ -80,7 +80,7 @@ export default function BorrowingDashboard() {
           fetchData();
   
           const channel = supabase.channel('schema-public-form-changes')
-              .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'forms' }, (payload) => {
+              .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'forms' }, () => {
                   fetchData(); // Fetch the latest data when a change is detected
                   toast(
                   "Notification", // First argument should be the message
@@ -165,8 +165,12 @@ export default function BorrowingDashboard() {
       })
     }
 
-    return filteredData
-  }, [borrowings, searchTerm, statusFilter, sortConfig])
+    // return filteredData
+
+    const paginatedData = filteredData.slice((page - 1) * pageSize, page * pageSize)
+    setTotalCount(filteredData.length)
+    return paginatedData
+  }, [borrowings, searchTerm, statusFilter, sortConfig, page, pageSize])
 
   // Get status badge color
   const getStatusColor = (status: string) => {
@@ -258,14 +262,6 @@ const handleStatusUpdate = async (id: string, newStatus: StatusType) => {
     }
   }
 
-  // Get available status options based on current status
-  const getStatusOptions = (currentStatus: string) => {
-    // Only allow these three statuses
-    const allowedStatuses = ["processed", "accepted", "activated", "rejected"]
-
-    // Filter out the current status
-    return allowedStatuses.filter((status) => status !== currentStatus)
-  }
 return (
     <div className="flex h-screen bg-transparent w-screen flex-col items-center">
 
@@ -374,7 +370,7 @@ return (
                         </div>
                         {sortedAndFilteredBorrowings.length !== 15 && sortedAndFilteredBorrowings.length > 0 && <div className="text-center text-sm text-muted-foreground opacity-80 mt-4">(The end of the data)</div>}
                         {/* Pagination */}
-                        {/* <Pagination className="mt-6" >
+                        <Pagination className="mt-6" >
                           <PaginationContent>
                             <PaginationItem>
                               <PaginationPrevious
@@ -384,10 +380,10 @@ return (
                             </PaginationItem >
                             <PaginationItem>
                               {Array.from({ length: totalPages }, (_, index) => (
-                                <PaginationLink
+                                <PaginationLink 
                                   key={index + 1}
                                   href="#"
-                                  onClick={()=> page !== 1? setPage(page + 1): null}
+                                  onClick={()=> setPage(index + 1)}
                                   isActive={page == index + 1}
                                 >
                                   {index + 1}
@@ -402,7 +398,7 @@ return (
                                 className={page === totalPages ? "cursor-not-allowed opacity-50" : ""}/>
                             </PaginationItem>
                           </PaginationContent>
-                        </Pagination> */}
+                        </Pagination>
                     </CardContent>
                 </Card>
 

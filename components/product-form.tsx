@@ -19,9 +19,17 @@ import { toast } from "sonner";
 
 
 export default function ProductForm() {
-  const [products, setProducts] = useState<any[]>([]); // State to store fetched products
+  interface Product {
+    id: number;
+    name: string;
+    total_stock: number;
+    status: 'available' | 'lost' | 'checked out' | 'disposed' | 'under audit' | 'in maintenance'  | 'in repair' | 'in maintenance' 
+
+    // Add other fields as needed based on your database schema
+  }
+
+  const [products, setProducts] = useState<Product[]>([]); // State to store fetched products
   const [isSubmitting, setIsSubmitting] = useState(false); // State to manage form submission status
-  const [isSuccess, setIsSuccess] = useState(false); // State to track success status
 
   const formSchema = z.object({
     product: z.string().min(1, { message: "Product is required" }),
@@ -85,7 +93,7 @@ export default function ProductForm() {
         console.error("Error inserting form:", error.message);
         alert("Failed to submit the form. Please check your input.");
       } else {
-        setIsSuccess(true);
+
         toast(
               "Notification", // First argument should be the message
               {

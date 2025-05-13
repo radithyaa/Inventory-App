@@ -5,7 +5,7 @@ import { useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { PenLine, Plus, Search, Trash, Trash2 } from "lucide-react"
+import { PenLine, Plus, Search, Trash } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -25,7 +25,7 @@ import type { Product } from "@/types/database"
 import { toast } from "sonner"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "./ui/alert-dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
-import { set } from "date-fns"
+import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "./ui/pagination"
 
 // Schema for form validation using Zod
 const productSchema = z.object({
@@ -39,6 +39,9 @@ type ProductFormValues = z.infer<typeof productSchema>
 
 export default function ProductsTable() {
   // State variables
+  const [page, setPage] = useState(1) // Current page for pagination
+  const [totalPages, setTotalPages] = useState(1) // Total number of pages for pagination
+  const [totalCount] = useState(15) // Total number of products
   const [products, setProducts] = useState<Product[]>([]) // Stores the list of products
   const [isLoading, setIsLoading] = useState(true) // Loading state for fetching products
   const [isDialogOpen, setIsDialogOpen] = useState(false) // State to control the dialog visibility
@@ -110,7 +113,7 @@ export default function ProductsTable() {
   }, [])
 
   const handleRemove = async function (id: number){
-    const {data, error} = await supabase
+    const { error} = await supabase
     .from('products')
     .delete()
     .eq('id', id)
@@ -121,11 +124,28 @@ export default function ProductsTable() {
     }
   
     setProducts(products.filter((product) => product.id !== id))
-
+    toast(
+            "Notification", // First argument should be the message
+            {
+              position: "top-center",
+              description: "Data berhasil dihapus",
+              duration: 2500,
+              // action: <Button variant="outline" onClick={() => console.log(borrowings)}>Lihat Detail</Button>, 
+              classNames: {
+                actionButton: 'm-96 size-4',
+                toast: 'flex flex-row justify-around',
+              }
+            }
+          );
   }
 
   // Filter products based on the search term
-  const filteredProducts = products.filter((product) => product.name.toLowerCase().includes(searchTerm.toLowerCase()))
+  // The filtered products are sliced to show only 15 items per page
+  useEffect(() => {
+    setTotalPages(Math.ceil(products.length / 15))
+  }, [products])
+
+  const filteredProducts = products.filter((product) => product.name.toLowerCase().includes(searchTerm.toLowerCase())).slice((page - 1) * totalCount, page * totalCount)
 
   // Handle form submission to add a new product
   const onSubmit = async (data: ProductFormValues) => {
@@ -435,6 +455,37 @@ export default function ProductsTable() {
               </TableBody>
             </Table>
           </div>
+          {filteredProducts.length !== 15 && filteredProducts.length > 0 && <div className="text-center text-sm text-muted-foreground opacity-80 mt-4">(The end of the data)</div>}
+                        {/* Pagination */}
+                        <Pagination className="mt-6" >
+                          <PaginationContent>
+                            <PaginationItem>
+                              <PaginationPrevious
+                                className={page === 1 ? "cursor-not-allowed opacity-50" : ""}
+                                onClick={() => { if (page > 1) { setPage(page - 1); } }}
+                              />
+                            </PaginationItem >
+                            <PaginationItem>
+                              {Array.from({ length: totalPages }, (_, index) => (
+                                <PaginationLink 
+                                  key={index + 1}
+                                  href="#"
+                                  onClick={()=> setPage(index + 1)}
+                                  isActive={page == index + 1}
+                                >
+                                  {index + 1}
+                                </PaginationLink>
+                              ))}
+                            </PaginationItem>
+                            <PaginationItem>
+                              <PaginationEllipsis />
+                            </PaginationItem>
+                            <PaginationItem>
+                              <PaginationNext onClick={()=> page !== totalPages? setPage(page + 1): ""} 
+                                className={page === totalPages ? "cursor-not-allowed opacity-50" : ""}/>
+                            </PaginationItem>
+                          </PaginationContent>
+                        </Pagination>
         </CardContent>
       </Card>
 

@@ -1,7 +1,5 @@
 import { Button } from "@/components/ui/button";
 import Footer from "@/components/ui/footer";
-import Head from "next/head";
-import Image from "next/image";
 import Link from "next/link";
 
 export default function Home() {
