@@ -19,15 +19,14 @@ import CustomSheet from "./custom-sheet"
           </Link>
           </div>
           </div>
-          <div className="self-center flex lg:gap-56 md:gap-20 sm:gap-20">
+          <div className="self-center hidden md:flex lg:gap-56 md:gap-20 sm:gap-20">
           <NavLink></NavLink>
           </div>
-          <div className=" hidden sm:flex items-center md:space-x-2 lg:space-x-2 space-x-1">
-            
+          <div className=" hidden md:flex items-center md:space-x-2 lg:space-x-2 space-x-1">
           <HeaderAuth />
           <ThemeSwitcher />
           </div>
-          <div className="flex sm:hidden items-center">
+          <div className="flex md:hidden items-center">
           <CustomSheet/>
 
           </div>

@@ -22,9 +22,10 @@ import {
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { createClient } from "@supabase/supabase-js"
 import type { Product } from "@/types/database"
-import { toast } from "@/hooks/use-toast"
+import { toast } from "sonner"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "./ui/alert-dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
+import { set } from "date-fns"
 
 // Schema for form validation using Zod
 const productSchema = z.object({
@@ -173,10 +174,19 @@ export default function ProductsTable() {
       form.reset()
       setIsDialogOpen(false)
       fetchProducts()
-      toast({
-        description: "Sukses menambahkan data!",
-        duration: 2500,
-      });
+      toast(
+              "Notification", // First argument should be the message
+              {
+                position: "top-center",
+                description: "Data berhasil ditambahkan",
+                duration: 2500,
+                // action: <Button variant="outline" onClick={() => console.log(borrowings)}>Lihat Detail</Button>, 
+                classNames: {
+                  actionButton: 'm-96 size-4',
+                  toast: 'flex flex-row justify-around',
+                }
+              }
+            );
       // alert("Product added successfully!")
     } catch (error) {
       console.error("Error adding product:", error)
@@ -191,7 +201,7 @@ export default function ProductsTable() {
       {/* Sidebar */}
 
       {/* Main content area */}
-      <Card className="w-full m:8 sm:m-6 lg:m-8 max-w-7xl rounded-none sm:rounded-md ">
+      <Card className="w-full min-h-screen sm:min-h-full m:8 sm:m-6 lg:m-8 max-w-7xl rounded-none sm:rounded-md ">
         <CardHeader className="flex flex-row items-center justify-between sm">
           <div>
             <CardTitle>Products</CardTitle>
@@ -238,7 +248,7 @@ export default function ProductsTable() {
                   filteredProducts.map((product) => (
                     <TableRow key={product.id}>
                         <TableCell>{products.findIndex((p) => p.id === product.id) + 1}</TableCell>
-                      {product.name.charAt(0).toUpperCase() + product.name.slice(1)}
+                      <TableCell>{product.name.charAt(0).toUpperCase() + product.name.slice(1)}</TableCell>
                       <TableCell>{product.total_stock}</TableCell>
                       <TableCell>
                         <span>
@@ -277,20 +287,43 @@ export default function ProductsTable() {
                               if (error) {
                                 console.error("Error updating product:", error);
                                 console.error(data)
-                                toast({
-                                description: "Gagal memperbarui data!",
-                                duration: 2500,
-                                });
+                                toast(
+                                      "Notification", // First argument should be the message
+                                      {
+                                        position: "top-center",
+                                        description: "gagal memperbarui data",
+                                        duration: 2500,
+                                        // action: <Button variant="outline" onClick={() => console.log(borrowings)}>Lihat Detail</Button>, 
+                                        classNames: {
+                                          actionButton: 'm-96 size-4',
+                                          toast: 'flex flex-row justify-around',
+                                        }
+                                      }
+                                    )
                                 return;
                               }
 
-                              toast({
-                                description: "Sukses memperbarui data!",
-                                duration: 2500,
-                              });
+                              toast(
+                                    "Notification", // First argument should be the message
+                                    {
+                                      position: "top-center",
+                                      description: "Berhasil mengubah data",
+                                      duration: 2500,
+                                      // action: <Button variant="outline" onClick={() => console.log(borrowings)}>Lihat Detail</Button>,
+                                      classNames: {
+                                        actionButton: 'm-96 size-4',
+                                        toast: 'flex flex-row justify-around',
+                                      }
+                                    }
+                                  )
+                                  
 
-                              fetchProducts(); // Refresh product list
-                              setIsDialogOpen(false); // Close dialog
+                                  setProducts((prevProducts) =>
+                                    prevProducts.map((p) =>
+                                      p.id === product.id ? { ...p, ...data } : p
+                                    )
+                                  );
+                                  setIsDialogOpen(false); // Close dialog
                               } catch (error) {
                               console.error("Error updating product:", error);
                               } finally {

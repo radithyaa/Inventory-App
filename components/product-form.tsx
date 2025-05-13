@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 // Define the schema for form validation using Zod
 
@@ -55,7 +55,7 @@ export default function ProductForm() {
     };
 
     fetchProducts();
-  }, [supabase]);
+  }, []);
 
   // Initialize the form with default values and validation schema
   const form = useForm<FormValues>({
@@ -86,14 +86,35 @@ export default function ProductForm() {
         alert("Failed to submit the form. Please check your input.");
       } else {
         setIsSuccess(true);
-        toast({
-          description: "Sukses menyimpan data!",
-          duration: 2500,
-        });
+        toast(
+              "Notification", // First argument should be the message
+              {
+                position: "top-center",
+                description: "Form submitted successfully",
+                duration: 2500,
+                // action: <Button variant="outline" onClick={() => console.log(borrowings)}>Lihat Detail</Button>, 
+                classNames: {
+                  actionButton: 'm-96 size-4',
+                  toast: 'flex flex-row justify-around',
+                }
+              }
+            )
       }
     } catch (err) {
       console.error("Unexpected error:", err);
-      alert("An unexpected error occurred.");
+      toast(
+            "Notification", // First argument should be the message
+            {
+              position: "top-center",
+              description: "Terdapat data baru ditambahkan",
+              duration: 2500,
+              // action: <Button variant="outline" onClick={() => console.log(borrowings)}>Lihat Detail</Button>, 
+              classNames: {
+                actionButton: 'm-96 size-4',
+                toast: 'flex flex-row justify-around',
+              }
+            }
+          )
     } finally {
       setIsSubmitting(false);
     }
