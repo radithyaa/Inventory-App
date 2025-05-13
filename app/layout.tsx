@@ -2,7 +2,7 @@ import { Geist } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
 import Navbar from "@/components/navbar";
-import { Toaster } from "@/components/ui/toaster";
+import { Toaster } from "@/components/ui/sonner";
 import Image from "next/image";
 
 const defaultUrl = process.env.VERCEL_URL

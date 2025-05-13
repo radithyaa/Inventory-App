@@ -27,9 +27,9 @@ export default function ProductForm() {
     product: z.string().min(1, { message: "Product is required" }),
     total: z
       .coerce
-      .number()
-      .positive({ message: "Total must be a positive number" }),
-    name: z.string().min(1, { message: "Name is required" }),
+      .number({message: "Total is required"})
+      .positive({ message: "Total must be a positive" }),
+    name: z.string({message: 'nama harus benar'}).min(1, { message: "Name is required" }),
     class: z.string().min(1, { message: "Class is required" }),
     date: z.date({ required_error: "Date is required" }),
     comment: z.string().optional(),

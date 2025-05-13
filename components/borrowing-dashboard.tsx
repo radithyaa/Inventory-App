@@ -18,7 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { createClient } from "@supabase/supabase-js"
-import { toast } from "@/hooks/use-toast"
+import { toast } from "sonner"
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "./ui/pagination"
 
 // Type for sorting
@@ -80,8 +80,21 @@ export default function BorrowingDashboard() {
           fetchData();
   
           const channel = supabase.channel('schema-public-form-changes')
-              .on('postgres_changes', { event: '*', schema: 'public', table: 'forms' }, (payload) => {
+              .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'forms' }, (payload) => {
                   fetchData(); // Fetch the latest data when a change is detected
+                  toast(
+                  "Notification", // First argument should be the message
+                  {
+                    position: "top-center",
+                    description: "Terdapat data baru ditambahkan",
+                    duration: 10000,
+                    // action: <Button variant="outline" onClick={() => console.log(borrowings)}>Lihat Detail</Button>, 
+                    classNames: {
+                      actionButton: 'm-96 size-4',
+                      toast: 'flex flex-row justify-around',
+                    }
+                  }
+                );
               })
               .subscribe();
   
@@ -182,36 +195,47 @@ export default function BorrowingDashboard() {
 
   // Handle status update
 const handleStatusUpdate = async (id: string, newStatus: StatusType) => {
-    const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-    );
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+  );
 
-    const { data, error } = await supabase
+  const { data, error } = await supabase
     .from('forms')
-    .update({status: newStatus,
-            updated_at: new Date()
-
-     })
+    .update({
+      status: newStatus,
+      updated_at: new Date()
+    })
     .eq('id', id);
 
-    if (error) {
-        console.error('Error updating status:', error.message);
-        alert('Error updating status:'+ data);
-        return;
-    }
-    
+  if (error) {
+    console.error('Error updating status:', error.message);
+    alert('Error updating status:' + data);
+    return;
+  }
 
-    setBorrowings((prevBorrowings) =>
-        prevBorrowings.map((borrowing) =>
-            borrowing.id === id ? { ...borrowing, status: newStatus } : borrowing
-        )
-    );
-    setIsDetailOpen(false)
-    toast({
-      description: "Sukses mengubah data!",
-      duration: 2500,
-    });
+  setBorrowings((prevBorrowings) =>
+    prevBorrowings.map((borrowing) =>
+      borrowing.id === id ? { ...borrowing, status: newStatus } : borrowing
+    )
+  );
+  setIsDetailOpen(false);
+  toast(
+      "Notification",
+      {
+          duration: 2500,
+          description: "Status berhasil diubah",
+          // action: <Button variant="outline" onClick={() => setIsDetailOpen(true)}>Lihat Detail</Button>,
+          position: "top-center",
+          className: "bg-green-500 text-white",
+          classNames: {
+            description: "text-sm text-muted-foreground w-full",
+            actionButton: "bg-green-500 text-white ml-4",
+            title: "text-center font-bold text-white",
+            toast: "justify-center m-0 p-0  "
+          }
+      }
+  );
 };
 
   // Handle status change in detail dialog
