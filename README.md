@@ -7,11 +7,9 @@ View the live project at 👉 [pengkolantech.site](https://pengkolantech.site)
 This project is developed by me to **SMKN 2 Cikarang Barat** to manage school inventory data in real-time using modern web technologies.  
 Built with **Next.js** and **Supabase**, the system allows admins to track borrowings, confirm or reject requests, and view inventory status—all in a clean, responsive dashboard.
 
-![App Screenshot](./readme/screenshot.jpg)
-
 🎞️ Below is a quick look at the user experience:
 
-![App Demo](./readme/demo.gif)
+![App Demo](./readme/Borrowingpage_interview.gif)
 
 ---
 
