@@ -9,7 +9,7 @@ Built with **Next.js** and **Supabase**, the system allows admins to track borro
 
 🎞️ Below is a quick look at the user experience:
 
-![App Demo](./readme/Borrowingpage_interview.gif)
+![App Demo](./public/readme/Homepage_interview.gif)
 
 ---
 
