@@ -10,19 +10,19 @@ Built with **Next.js** and **Supabase**, the system allows admins to track borro
 🎞️ Below is a quick look at the user experience:
 
 ### 🏠 Home Page
-![Home Demo](./readme/Homepage_interview.gif)
+![Home Demo](./public/readme/Homepage_interview.gif)
 
 ### 🔐 Sign In Page
-![Login Screenshot](./readme/login_screenshot.png)
+![Login Screenshot](./public/readme/login_screenshot.png)
 
 ### 📝 Form Page
-![Form Screenshot](./readme/form_screenshot.png)
+![Form Screenshot](./public/readme/form_screenshot.png)
 
 ### 📋 Borrowings Page
-![Borrowings Demo](./readme/Borrowingpage_interview.gif)
+![Borrowings Demo](./public/readme/Borrowingpage_interview.gif)
 
 ### 📦 Products Page
-![Products Demo](./readme/Productspage_interview.gif)
+![Products Demo](./public/readme/Productspage_interview.gif)
 
 ---
 
