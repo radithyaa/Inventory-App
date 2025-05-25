@@ -1,6 +1,21 @@
-View the project at https://pengkolantech.site
+# 📦 SMKN 2 Cikarang Barat Inventory System
 
-## Getting Started
+View the live project at 👉 [pengkolantech.site](https://pengkolantech.site)
+
+## 📊 Overview
+
+This project is developed by me to **SMKN 2 Cikarang Barat** to manage school inventory data in real-time using modern web technologies.  
+Built with **Next.js** and **Supabase**, the system allows admins to track borrowings, confirm or reject requests, and view inventory status—all in a clean, responsive dashboard.
+
+![App Screenshot](./readme/screenshot.jpg)
+
+🎞️ Below is a quick look at the user experience:
+
+![App Demo](./readme/demo.gif)
+
+---
+
+## 🚀 Getting Started
 
 Run the development server:
 
@@ -11,7 +26,7 @@ npm run dev
 # or bun dev
 ```
 
-Remember to add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` to your `.env` file:
+Before running, make sure to add the following environment variables to your `.env` file:
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=
