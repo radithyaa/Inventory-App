@@ -1,6 +1,5 @@
 /** @type {import('next-sitemap').IConfig} */
 module.exports = {
-    siteUrl: 'https://pengkolantech.site',
-    generateRobotsTxt: true,
-  };
-  
+	siteUrl: "https://pengkolantech.site",
+	generateRobotsTxt: true,
+};

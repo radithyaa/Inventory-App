@@ -1,55 +1,50 @@
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import Footer from "@/components/ui/footer";
-import Link from "next/link";
 
 export default function Home() {
-  return (
-    <>
-      <div className="flex flex-col w-full wrap">
-        {/* Hero Section */}
-        <section className="relative top-0 flex flex-col items-center justify-center h-screen gap-12 p-8 md:top-8">
-          {/* Background Images */}
-          
+	return (
+		<div className="wrap flex w-full flex-col">
+			{/* Hero Section */}
+			<section className="relative top-0 flex h-screen flex-col items-center justify-center gap-12 p-8 md:top-8">
+				{/* Background Images */}
 
-          {/* Title */}
-          <h1 className="max-w-5xl text-4xl font-medium text-center md:text-6xl lg:text-6xl text-foreground">
-            Inventory Web{" "}
-            <span className="text-primary font-poppins">
-              Teknologi Jaringan Komputer
-            </span>
-          </h1>
+				{/* Title */}
+				<h1 className="max-w-5xl text-center font-medium text-4xl text-foreground md:text-6xl lg:text-6xl">
+					Inventory Web{" "}
+					<span className="font-poppins text-primary">
+						Teknologi Jaringan Komputer
+					</span>
+				</h1>
 
-          {/* Description */}
-          <p className="max-w-xl text-lg text-center font-poppins text-foreground">
-            Web yang mengintegrasikan beberapa teknologi untuk keperluan
-            pengelolaan inventaris Jurusan TKJ, membuat pengelolaan semakin
-            mudah dan semakin cepat
-          </p>
+				{/* Description */}
+				<p className="max-w-xl text-center font-poppins text-foreground text-lg">
+					Web yang mengintegrasikan beberapa teknologi untuk keperluan
+					pengelolaan inventaris Jurusan TKJ, membuat pengelolaan semakin mudah
+					dan semakin cepat
+				</p>
 
-          {/* Buttons */}
-          <div className="relative flex flex-col items-center justify-center w-full gap-6 mx-auto -mt-4 md:gap-20 md:max-w-sm sm:flex-row">
-            <Button asChild variant={"default"}>
-            <Link
-              href="/forms"
-              className="w-full px-4 py-2 font-semibold text-center  transition-colors duration-200 border rounded-sm md:w-40  hover:bg-transparent hover:text-primary hover:border-primary"
-            >
-              <span>Form</span>
-            
-            </Link>
-            </Button>
-            <Button asChild variant={"outline"}>
-            <Link
-              href="/sign-in"
-              className="w-full px-4 py-2 font-semibold border-primary text-primary text-center transition-colors duration-200 border rounded-sm md:w-40 hover:bg-primary hover:text-white"
-            >
-              <span>Sign In</span>
-            </Link>
-            </Button>
-          </div>
-        </section>
-      <Footer />
-      </div>
-
-    </>
-  );
+				{/* Buttons */}
+				<div className="relative mx-auto -mt-4 flex w-full flex-col items-center justify-center gap-6 sm:flex-row md:max-w-sm md:gap-20">
+					<Button asChild variant={"default"}>
+						<Link
+							className="w-full rounded-sm border px-4 py-2 text-center font-semibold transition-colors duration-200 hover:border-primary hover:bg-transparent hover:text-primary md:w-40"
+							href="/forms"
+						>
+							<span>Form</span>
+						</Link>
+					</Button>
+					<Button asChild variant={"outline"}>
+						<Link
+							className="w-full rounded-sm border border-primary px-4 py-2 text-center font-semibold text-primary transition-colors duration-200 hover:bg-primary hover:text-white md:w-40"
+							href="/sign-in"
+						>
+							<span>Sign In</span>
+						</Link>
+					</Button>
+				</div>
+			</section>
+			<Footer />
+		</div>
+	);
 }

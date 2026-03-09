@@ -1,73 +1,90 @@
 import { Geist } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
-import Navbar from "@/components/navbar";
-import { Toaster } from "@/components/ui/sonner";
 import Image from "next/image";
+import Navbar from "@/components/navbar";
+import Providers from "@/components/providers";
+import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 const defaultUrl = process.env.VERCEL_URL
-  ? `https://${process.env.VERCEL_URL}`
-  : "http://localhost:3000";
+	? `https://${process.env.VERCEL_URL}`
+	: "http://localhost:3000";
 
 export const metadata = {
-  metadataBase: new URL(defaultUrl),
-  title: "Inventory Tkj Pengkolan Tech",
-  description: "The efficient way to helps create, monitor, and manage your inventory",
+	metadataBase: new URL(defaultUrl),
+	title: "Inventory Tkj Pengkolan Tech",
+	description:
+		"The efficient way to helps create, monitor, and manage your inventory",
 };
 
 const geistSans = Geist({
-  display: "swap",
-  subsets: ["latin"],
+	display: "swap",
+	subsets: ["latin"],
 });
 
 export default function RootLayout({
-  children,
+	children,
 }: Readonly<{
-  children: React.ReactNode;
+	children: React.ReactNode;
 }>) {
-  return (
-    <html lang="en" className={geistSans.className} suppressHydrationWarning>
-      <body className="bg-background text-foreground overflow-x-hidden h-screen ">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <Navbar/>
-          <main className="flex flex-col gap-20 w-full items-center min-h-[91vh]">
-          <div className="absolute hidden w-screen h-screen -z-50 md:block top-16">
-            <Image
-              src="/circle.svg"
-              alt="Circle" width={100} height={100}
-              className="absolute w-3/5 -top-60 opacity-90 -right-56 md:hidden lg:block"
-            />
-            <Image
-              src="/Computer.svg"
-              alt="Computer" width={100} height={100}
-              className="absolute w-14 bottom-32 right-20 animate-bounceY"
-            />
-            <Image
-              src="/Gear.svg"
-              alt="Gear" width={100} height={100}
-              className="absolute w-14 top-28 sm:top-20 left-32 animate-bounceY"
-            />
-            <Image
-              src="/Wrench.svg"
-              alt="Wrench" width={100} height={100}
-              className="absolute w-14 top-[3.75rem] right-64 animate-bounceY"
-            />
-            <Image
-              src="/circle.svg"
-              alt="Circle" width={100} height={100}
-              className="absolute w-3/5 bottom-4 opacity-90 -left-72 md:hidden lg:block"
-            />
-          </div>
-            {children}
-            <Toaster/>
-          </main>
-        </ThemeProvider>
-      </body>
-    </html>
-  );
+	return (
+		<html className={geistSans.className} lang="en" suppressHydrationWarning>
+			<body className="h-screen overflow-x-hidden bg-background text-foreground">
+				<ThemeProvider
+					attribute="class"
+					defaultTheme="light"
+					disableTransitionOnChange
+					enableSystem
+				>
+					<Providers>
+						<TooltipProvider>
+							<Navbar />
+							<main className="flex min-h-[91vh] w-full flex-col items-center gap-20">
+								<div className="absolute top-16 -z-50 hidden h-screen w-screen md:block">
+									<Image
+										alt="Circle"
+										className="absolute -top-60 -right-56 w-3/5 opacity-90 md:hidden lg:block"
+										height={100}
+										src="/circle.svg"
+										width={100}
+									/>
+									<Image
+										alt="Computer"
+										className="absolute right-20 bottom-32 w-14 animate-bounceY"
+										height={100}
+										src="/Computer.svg"
+										width={100}
+									/>
+									<Image
+										alt="Gear"
+										className="absolute top-28 left-32 w-14 animate-bounceY sm:top-20"
+										height={100}
+										src="/Gear.svg"
+										width={100}
+									/>
+									<Image
+										alt="Wrench"
+										className="absolute top-[3.75rem] right-64 w-14 animate-bounceY"
+										height={100}
+										src="/Wrench.svg"
+										width={100}
+									/>
+									<Image
+										alt="Circle"
+										className="absolute bottom-4 -left-72 w-3/5 opacity-90 md:hidden lg:block"
+										height={100}
+										src="/circle.svg"
+										width={100}
+									/>
+								</div>
+								{children}
+								<Toaster />
+							</main>
+						</TooltipProvider>
+					</Providers>
+				</ThemeProvider>
+			</body>
+		</html>
+	);
 }

@@ -1,26 +1,37 @@
-export type Product = {
-  id: number
-  name: string
-  total_stock: number
-  available_stock?: number // Stok yang tersedia setelah dikurangi peminjaman
-  status: "available" | "lost" | "checked out" | "disposed" | "under audit" | "in maintenance"
+export interface Product {
+	available_stock?: number; // Stok yang tersedia setelah dikurangi peminjaman
+	forms?: {
+		product_id: number;
+		total: number;
+		status: string;
+	}[];
+	id: number;
+	name: string;
+	status:
+		| "available"
+		| "lost"
+		| "checked out"
+		| "disposed"
+		| "under audit"
+		| "in maintenance";
+	total_stock: number;
 }
 
-export type BorrowingDisplay = {
-  id: number
-  product: string
-  model: string
-  serial_number: string
-  borrower: string
-  class: string
-  borrowDate: Date
-  returnDate: Date | null
-  status: string
-  comment: string | null
+export interface BorrowingDisplay {
+	borrowDate: Date;
+	borrower: string;
+	class: string;
+	comment: string | null;
+	id: number;
+	model: string;
+	product: string;
+	returnDate: Date | null;
+	serial_number: string;
+	status: string;
 }
 
-export type User = {
-  id: string
-  email: string
-  created_at: string
+export interface User {
+	created_at: string;
+	email: string;
+	id: string;
 }

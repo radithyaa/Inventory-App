@@ -1,28 +1,30 @@
-import { signOutAction } from "@/app/actions";
+"use client";
+
 import Link from "next/link";
+import { signOutAction } from "@/app/actions";
+import { useUser } from "@/components/user-provider";
 import { Button } from "./ui/button";
-import { createClient } from "@/utils/supabase/server";
 
-export default async function AuthButton() {
-  const supabase = await createClient();
+export default function AuthButton() {
+	const { user } = useUser();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  return user ? (
-    <div className=" items-center gap-4 hidden sm:flex">
-      <form action={signOutAction}>
-        <Button type="submit" variant={"outline"} className="border-primary text-primary  hover:text-red">
-          Sign out
-        </Button>
-      </form>
-    </div>
-  ) : (
-    <div className="flex gap-2">
-      <Button asChild size="sm" variant={"outline"}>
-        <Link href="/sign-in">Sign In</Link>
-      </Button>
-    </div>
-  );
+	return user ? (
+		<div className="hidden items-center gap-4 sm:flex">
+			<form action={signOutAction}>
+				<Button
+					className="border-primary text-primary hover:text-red"
+					type="submit"
+					variant={"outline"}
+				>
+					Sign out
+				</Button>
+			</form>
+		</div>
+	) : (
+		<div className="flex gap-2">
+			<Button asChild size="sm" variant={"outline"}>
+				<Link href="/sign-in">Sign In</Link>
+			</Button>
+		</div>
+	);
 }

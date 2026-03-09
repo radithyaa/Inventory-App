@@ -1,492 +1,708 @@
-"use client"
+"use client";
 
-import { useState, useMemo, useEffect } from "react"
-import { format } from "date-fns"
-import {  ChevronDown, ChevronUp, Search} from "lucide-react"
-
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { createClient } from "@supabase/supabase-js"
-import { toast } from "sonner"
-import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "./ui/pagination"
+	type ColumnDef,
+	flexRender,
+	getCoreRowModel,
+	type PaginationState,
+	type SortingState,
+	useReactTable,
+} from "@tanstack/react-table";
+import { format } from "date-fns";
+import {
+	Calendar,
+	CheckCircle2,
+	Package,
+	RefreshCcw,
+	Search,
+	Trash,
+	User,
+	XCircle,
+} from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+import {
+	deleteOrder,
+	getOrderDetails,
+	getOrders,
+	type StatusType,
+	updateOrderStatus,
+} from "@/app/dashboard/queries";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "@/components/ui/card";
+import {
+	Dialog,
+	DialogContent,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
+import { useDebounce } from "@/hooks/use-debounce";
+import { createClient } from "@/utils/supabase/client";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+	AlertDialogTrigger,
+} from "./ui/alert-dialog";
+import {
+	Pagination,
+	PaginationContent,
+	PaginationItem,
+	PaginationLink,
+	PaginationNext,
+	PaginationPrevious,
+} from "./ui/pagination";
+import { Skeleton } from "./ui/skeleton";
 
-// Type for sorting
-type SortConfig = {
-  key: string
-  direction: "ascending" | "descending"
-} | null
+// --- TYPES ---
+interface OrderSummary {
+	borrow_date: string;
+	class: string;
+	id: string | number;
+	item_count: number;
+	name: string;
+	status: string;
+}
 
-type StatusType = "pending" | "borrowed" | "returned" | "rejected"
-type ClassType = "X TKJ 1" | "XI TKJ 1" | "XI TKJ 2" | "XII TKJ 1" | "XII TKJ 2"
-
-type Borrowing = {
-  id: string
-  total: number
-  name: string
-  class: ClassType
-  comment: string
-  status: StatusType
-  created_at: Date
-  updated_at: Date
-  product_id: {
-    id: string
-    name: string
-    stock: number
-  }
+interface OrderDetail {
+	borrow_date: string;
+	class: string;
+	id: string | number;
+	name: string;
+	note?: string | null;
+	order_product?: Array<{
+		amount: number;
+		products: {
+			name: string;
+			attachment?: string | null;
+			available_stock: number;
+			total_stock: number;
+			model?: string | null;
+			categories: { name: string } | null;
+		} | null;
+	}>;
+	status: string;
 }
 
 export default function BorrowingDashboard() {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState("all")
-  const [selectedBorrowing, setSelectedBorrowing] = useState<Borrowing | null>(null)
-  const [isDetailOpen, setIsDetailOpen] = useState(false)
-  const [borrowings, setBorrowings] = useState<Borrowing[]>([])
-  const [sortConfig, setSortConfig] = useState<SortConfig>(null)
-  const [editedStatus, setEditedStatus] = useState<StatusType>("pending")
-  const [hasChanges, setHasChanges] = useState(false)
-  const [page , setPage] = useState(1)
-  const [pageSize] = useState(15)
-  const [totalCount, setTotalCount] = useState(0)
+	const queryClient = useQueryClient();
+	const supabase = useMemo(() => createClient(), []);
+	const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+	const [isDetailOpen, setIsDetailOpen] = useState(false);
 
-  useEffect(() => {
-          const supabase = createClient(
-              process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-              process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-          );
-  
-          const fetchData = async () => {
-            // const from = (page - 1) * pageSize;
-            // const to = page * pageSize - 1;
-              const { data, error } = await supabase.from('forms').select("*,product_id(*)").order('created_at', { ascending: false })
-              if (error) {
-                  return 'error fetching notes: ' + error.message;
-              }
-             
-                      // setTotalCount(count || 0)
-              setBorrowings(data);
-          };
-  
-          fetchData();
-  
-          const channel = supabase.channel('schema-public-form-changes')
-              .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'forms' }, () => {
-                  fetchData(); // Fetch the latest data when a change is detected
-                  toast(
-                  "Notification", // First argument should be the message
-                  {
-                    position: "top-center",
-                    description: "Terdapat data baru ditambahkan",
-                    duration: 10000,
-                    // action: <Button variant="outline" onClick={() => console.log(borrowings)}>Lihat Detail</Button>, 
-                    classNames: {
-                      actionButton: 'm-96 size-4',
-                      toast: 'flex flex-row justify-around',
-                    }
-                  }
-                );
-              })
-              .subscribe();
-  
-          return () => {
-              supabase.removeChannel(channel);
-              
-          };
-      }, []);  
+	// --- Server-side State Management ---
+	const [sorting, setSorting] = useState<SortingState>([]);
+	const [{ pageIndex, pageSize }, setPagination] = useState<PaginationState>({
+		pageIndex: 0,
+		pageSize: 15,
+	});
+	const [searchTerm, setSearchTerm] = useState("");
+	const [statusFilter, setStatusFilter] = useState<StatusType | "all">("all");
+	const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
-      const totalPages = Math.ceil(totalCount / pageSize)
+	const pagination = useMemo(
+		() => ({ pageIndex, pageSize }),
+		[pageIndex, pageSize]
+	);
 
-  // Handle sorting
-  const requestSort = (key: string) => {
-    let direction: "ascending" | "descending" = "ascending"
+	// --- REAL-TIME SYNC ---
+	useEffect(() => {
+		const channel = supabase
+			.channel("admin_dashboard_global")
+			.on(
+				"postgres_changes",
+				{ event: "*", schema: "public", table: "orders" },
+				(payload) => {
+					queryClient.invalidateQueries({ queryKey: ["orders"] });
 
-    if (sortConfig && sortConfig.key === key && sortConfig.direction === "ascending") {
-      direction = "descending"
-    }
+					if (
+						selectedOrderId &&
+						(payload.new as { id: number }).id === Number(selectedOrderId)
+					) {
+						queryClient.invalidateQueries({
+							queryKey: ["order-detail", selectedOrderId],
+						});
+					}
 
-    setSortConfig({ key, direction })
-  }
+					if (payload.eventType === "INSERT") {
+						toast("New Order Received!", {
+							description: `Order from ${(payload.new as { name: string }).name}`,
+							icon: <Package className="text-primary" />,
+						});
+					}
+				}
+			)
+			.subscribe();
 
-  // Get sort direction for a column
-  const getSortDirection = (key: string) => {
-    if (!sortConfig || sortConfig.key !== key) {
-      return null
-    }
-    return sortConfig.direction
-  }
+		return () => {
+			supabase.removeChannel(channel);
+		};
+	}, [supabase, queryClient, selectedOrderId]);
 
-  // Sort and filter borrowings
-  const sortedAndFilteredBorrowings = useMemo(() => {
-    // First filter the borrowings
-    const filteredData = borrowings.filter((borrowing) => {
-      const matchesSearch =
-        borrowing.product_id.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        borrowing.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        borrowing.class.toLowerCase().includes(searchTerm.toLowerCase())
+	// --- DATA FETCHING (Orders List) ---
+	const { data, isLoading: ordersLoading } = useQuery({
+		queryKey: [
+			"orders",
+			pagination,
+			debouncedSearchTerm,
+			statusFilter,
+			sorting,
+		],
+		queryFn: () =>
+			getOrders({
+				pageIndex: pagination.pageIndex,
+				pageSize: pagination.pageSize,
+				searchTerm: debouncedSearchTerm,
+				statusFilter,
+				sortBy: sorting[0]?.id,
+				sortOrder: sorting[0]?.desc ? "desc" : "asc",
+			}),
+	});
 
-      const matchesStatus = statusFilter === "all" || borrowing.status === statusFilter
+	// --- DATA FETCHING (Single Order Detail) ---
+	const { data: orderDetail, isLoading: detailLoading } = useQuery({
+		queryKey: ["order-detail", selectedOrderId],
+		queryFn: () => getOrderDetails(selectedOrderId as string),
+		enabled: !!selectedOrderId,
+	});
 
-      return matchesSearch && matchesStatus
-    })
+	// --- MUTATIONS ---
+	const { mutate: handleUpdateStatus, isPending: isUpdating } = useMutation({
+		mutationFn: ({ id, status }: { id: string | number; status: StatusType }) =>
+			updateOrderStatus(id, status),
+		onSuccess: () => {
+			toast.success("Order status has been updated in database.");
+			queryClient.invalidateQueries({ queryKey: ["orders"] });
+			queryClient.invalidateQueries({
+				queryKey: ["order-detail", selectedOrderId],
+			});
+		},
+		onError: (error: Error) => {
+			toast.error(`Failed to update: ${error.message}`);
+		},
+	});
 
-    // Then sort the filtered data
-    if (sortConfig !== null) {
-      filteredData.sort((a, b) => {
-        // Handle date sorting
-        if (sortConfig.key === "created_at" || sortConfig.key === "updated_at") {
-          const dateA = a[sortConfig.key as keyof Borrowing] as unknown as Date
-          const dateB = b[sortConfig.key as keyof Borrowing] as unknown as Date
+	const { mutate: handleDeleteOrder, isPending: isDeleting } = useMutation({
+		mutationFn: (id: string | number) => deleteOrder(id),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["orders"] });
+			toast.success("Order deleted successfully.");
+		},
+		onError: (error: Error) => {
+			toast.error(`Failed to delete: ${error.message}`);
+		},
+	});
 
-          if (sortConfig.direction === "ascending") {
-            return dateA.getTime() - dateB.getTime()
-          } else {
-            return dateB.getTime() - dateA.getTime()
-          }
-        }
+	const getStatusBadge = (status: string) => {
+		switch (status) {
+			case "pending":
+				return (
+					<Badge
+						className="border-yellow-200 bg-yellow-100 text-yellow-700"
+						variant="secondary"
+					>
+						Pending
+					</Badge>
+				);
+			case "approved":
+				return (
+					<Badge className="border-green-200 bg-green-100 text-green-700">
+						Approved
+					</Badge>
+				);
+			case "borrowed":
+				return (
+					<Badge className="border-blue-200 bg-blue-100 text-blue-700">
+						Borrowed
+					</Badge>
+				);
+			case "returned":
+				return (
+					<Badge className="border-gray-200 bg-gray-100 text-gray-700">
+						Returned
+					</Badge>
+				);
+			case "rejected":
+				return <Badge variant="destructive">Rejected</Badge>;
+			case "overdue":
+				return (
+					<Badge className="animate-pulse" variant="destructive">
+						Overdue
+					</Badge>
+				);
+			default:
+				return <Badge variant="outline">{status}</Badge>;
+		}
+	};
 
-        // Handle string sorting
-        if (a[sortConfig.key as keyof Borrowing] < b[sortConfig.key as keyof Borrowing]) {
-          return sortConfig.direction === "ascending" ? -1 : 1
-        }
-        if (a[sortConfig.key as keyof Borrowing] > b[sortConfig.key as keyof Borrowing]) {
-          return sortConfig.direction === "ascending" ? 1 : -1
-        }
-        return 0
-      })
-    }
+	const columns: ColumnDef<OrderSummary>[] = [
+		{
+			header: "No",
+			enableSorting: false,
+			cell: ({ row }) =>
+				pagination.pageIndex * pagination.pageSize + row.index + 1,
+		},
+		{
+			accessorKey: "name",
+			header: "Borrower",
+			cell: ({ row }) => (
+				<div className="flex flex-col">
+					<span className="font-medium">{row.original.name}</span>
+					<span className="text-[10px] text-muted-foreground uppercase">
+						{row.original.class}
+					</span>
+				</div>
+			),
+		},
+		{
+			accessorKey: "item_count",
+			header: "Items",
+			enableSorting: false,
+			cell: ({ row }) => (
+				<span className="">{row.original.item_count} items</span>
+			),
+		},
+		{
+			accessorKey: "borrow_date",
+			header: "Date",
+			cell: ({ row }) =>
+				format(new Date(row.original.borrow_date), "MMM dd, HH:mm"),
+		},
+		{
+			accessorKey: "status",
+			header: "Status",
+			cell: ({ row }) => getStatusBadge(row.original.status),
+		},
+		{
+			id: "actions",
+			header: "Actions",
+			enableSorting: false,
+			cell: ({ row }) => {
+				const order = row.original;
+				return (
+					<div
+						className="flex items-center justify-center gap-2"
+						onClick={(e) => e.stopPropagation()}
+						onKeyDown={(e) => e.key === "Enter" && e.stopPropagation()}
+						role="presentation"
+					>
+						<AlertDialog>
+							<AlertDialogTrigger asChild>
+								<Button
+									className="h-8 w-8 text-destructive hover:bg-destructive/10"
+									disabled={isDeleting}
+									size="icon"
+									variant={"outline"}
+								>
+									<Trash size={16} />
+								</Button>
+							</AlertDialogTrigger>
+							<AlertDialogContent>
+								<AlertDialogHeader>
+									<AlertDialogTitle>Are you sure?</AlertDialogTitle>
+									<AlertDialogDescription>
+										This order will be deleted permanently.
+									</AlertDialogDescription>
+								</AlertDialogHeader>
+								<AlertDialogFooter>
+									<AlertDialogCancel>Cancel</AlertDialogCancel>
+									<AlertDialogAction
+										onClick={() => handleDeleteOrder(order.id)}
+									>
+										Continue
+									</AlertDialogAction>
+								</AlertDialogFooter>
+							</AlertDialogContent>
+						</AlertDialog>
+					</div>
+				);
+			},
+		},
+	];
 
-    // return filteredData
+	const table = useReactTable({
+		data: (data?.data as OrderSummary[]) ?? [],
+		columns,
+		pageCount: data?.pageCount ?? 0,
+		state: { pagination, sorting },
+		onPaginationChange: setPagination,
+		onSortingChange: setSorting,
+		getCoreRowModel: getCoreRowModel(),
+		manualPagination: true,
+		manualSorting: true,
+	});
 
-    const paginatedData = filteredData.slice((page - 1) * pageSize, page * pageSize)
-    setTotalCount(filteredData.length)
-    return paginatedData
-  }, [borrowings, searchTerm, statusFilter, sortConfig, page, pageSize])
+	const handleRowClick = useCallback((order: OrderSummary) => {
+		setSelectedOrderId(String(order.id));
+		setIsDetailOpen(true);
+	}, []);
 
-  // Get status badge color
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "pending":
-        return "bg-yellow-100 text-yellow-800 hover:bg-yellow-100"
-      case "borrowed":
-        return "bg-green-100 text-green-800 hover:bg-green-100"
-      case "returned":
-        return "bg-blue-100 text-blue-800 hover:bg-blue-100"
-      case "rejected":
-        return "bg-red-100 text-red-800 hover:bg-red-100"
-      default:
-        // For any other status (like "overdue"), use a neutral color
-        return "bg-gray-100 text-gray-800 hover:bg-gray-100"
-    }
-  }
+	const detail = orderDetail as unknown as OrderDetail;
 
-  // Handle row click to show details
-  const handleRowClick = (borrowing: Borrowing) => {
-    setSelectedBorrowing(borrowing)
-    setEditedStatus(borrowing.status)
-    setHasChanges(false)
-    setIsDetailOpen(true)
-  }
+	return (
+		<div className="flex w-screen justify-center">
+			<Card className="m:8 min-h-screen w-full max-w-7xl rounded-none border-none shadow-xl sm:m-6 sm:min-h-full sm:rounded-md lg:m-8">
+				<CardHeader className="flex flex-row items-center justify-between">
+					<div>
+						<CardTitle className="font-semibold text-xl">
+							Admin Dashboard
+						</CardTitle>
+						<CardDescription>
+							Monitor and manage inventory orders
+						</CardDescription>
+					</div>
+				</CardHeader>
+				<CardContent>
+					<div className="mb-6 flex flex-col gap-4 sm:flex-row">
+						<div className="relative flex-1">
+							<Search className="absolute top-2.5 left-2.5 h-4 w-4 text-muted-foreground" />
+							<Input
+								className="h-10 pl-8"
+								onChange={(e) => setSearchTerm(e.target.value)}
+								placeholder="Search borrower or note..."
+								type="text"
+								value={searchTerm}
+							/>
+						</div>
+						<Select
+							onValueChange={(v) => setStatusFilter(v as StatusType | "all")}
+							value={statusFilter}
+						>
+							<SelectTrigger className="h-10 w-full sm:w-[180px]">
+								<SelectValue placeholder="All Status" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="all">All Orders</SelectItem>
+								<SelectItem value="pending">Pending</SelectItem>
+								<SelectItem value="approved">Approved</SelectItem>
+								<SelectItem value="borrowed">Borrowed</SelectItem>
+								<SelectItem value="returned">Returned</SelectItem>
+								<SelectItem value="rejected">Rejected</SelectItem>
+							</SelectContent>
+						</Select>
+					</div>
 
-  // Handle status update
-const handleStatusUpdate = async (id: string, newStatus: StatusType) => {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-  );
+					<div className="overflow-hidden rounded-xl border bg-background">
+						<Table>
+							<TableHeader className="bg-muted">
+								{table.getHeaderGroups().map((headerGroup) => (
+									<TableRow key={headerGroup.id}>
+										{headerGroup.headers.map((header) => (
+											<TableHead className="tracking-wider" key={header.id}>
+												{flexRender(
+													header.column.columnDef.header,
+													header.getContext()
+												)}
+											</TableHead>
+										))}
+									</TableRow>
+								))}
+							</TableHeader>
+							<TableBody>
+								{ordersLoading ? (
+									Array.from({ length: pageSize }).map((_, i) => (
+										<TableRow key={i}>
+											{columns.map((_, j) => (
+												<TableCell key={j}>
+													<Skeleton className="h-6 w-full" />
+												</TableCell>
+											))}
+										</TableRow>
+									))
+								) : table.getRowModel().rows.length > 0 ? (
+									table.getRowModel().rows.map((row) => (
+										<TableRow
+											className="cursor-pointer transition-colors hover:bg-muted/50"
+											key={row.id}
+											onClick={() => handleRowClick(row.original)}
+										>
+											{row.getVisibleCells().map((cell) => (
+												<TableCell key={cell.id}>
+													{flexRender(
+														cell.column.columnDef.cell,
+														cell.getContext()
+													)}
+												</TableCell>
+											))}
+										</TableRow>
+									))
+								) : (
+									<TableRow>
+										<TableCell
+											className="h-40 text-center text-muted-foreground italic"
+											colSpan={columns.length}
+										>
+											No orders found.
+										</TableCell>
+									</TableRow>
+								)}
+							</TableBody>
+						</Table>
+					</div>
 
-  const { data, error } = await supabase
-    .from('forms')
-    .update({
-      status: newStatus,
-      updated_at: new Date()
-    })
-    .eq('id', id);
+					<Pagination className="mt-6">
+						<PaginationContent>
+							<PaginationItem>
+								<PaginationPrevious
+									className={
+										table.getCanPreviousPage()
+											? "cursor-pointer"
+											: "pointer-events-none opacity-50"
+									}
+									onClick={() => table.previousPage()}
+								/>
+							</PaginationItem>
+							{Array.from({ length: table.getPageCount() }).map((_, i) => (
+								<PaginationItem key={i}>
+									<PaginationLink
+										className="cursor-pointer"
+										isActive={pagination.pageIndex === i}
+										onClick={() => table.setPageIndex(i)}
+									>
+										{i + 1}
+									</PaginationLink>
+								</PaginationItem>
+							))}
+							<PaginationItem>
+								<PaginationNext
+									className={
+										table.getCanNextPage()
+											? "cursor-pointer"
+											: "pointer-events-none opacity-50"
+									}
+									onClick={() => table.nextPage()}
+								/>
+							</PaginationItem>
+						</PaginationContent>
+					</Pagination>
+				</CardContent>
+			</Card>
 
-  if (error) {
-    console.error('Error updating status:', error.message);
-    alert('Error updating status:' + data);
-    return;
-  }
+			{/* Detail Dialog */}
+			<Dialog onOpenChange={setIsDetailOpen} open={isDetailOpen}>
+				<DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
+					<DialogHeader>
+						<DialogTitle className="flex items-center gap-2 font-semibold">
+							Detail Peminjaman #{selectedOrderId?.slice(-4)}
+						</DialogTitle>
+					</DialogHeader>
 
-  setBorrowings((prevBorrowings) =>
-    prevBorrowings.map((borrowing) =>
-      borrowing.id === id ? { ...borrowing, status: newStatus } : borrowing
-    )
-  );
-  setIsDetailOpen(false);
-  toast(
-      "Notification",
-      {
-          duration: 2500,
-          description: "Status berhasil diubah",
-          // action: <Button variant="outline" onClick={() => setIsDetailOpen(true)}>Lihat Detail</Button>,
-          position: "top-center",
-          className: "bg-green-500 text-white",
-          classNames: {
-            description: "text-sm text-muted-foreground w-full",
-            actionButton: "bg-green-500 text-white ml-4",
-            title: "text-center font-bold text-white",
-            toast: "justify-center m-0 p-0  "
-          }
-      }
-  );
-};
+					{detailLoading ? (
+						<div className="space-y-4 py-4">
+							<Skeleton className="h-20 w-full" />
+							<Skeleton className="h-40 w-full" />
+						</div>
+					) : (
+						detail && (
+							<div className="space-y-6 py-4">
+								{/* Borrower Summary */}
+								<div className="grid grid-cols-1 gap-6 rounded-xl border bg-muted/30 p-4 md:grid-cols-2">
+									<div className="space-y-3">
+										<div className="flex items-center gap-2 text-sm">
+											<User className="text-muted-foreground" size={16} />
+											<span className="font-medium text-sm">{detail.name}</span>
+											<Badge className="ml-1 text-[10px]" variant="outline">
+												{detail.class}
+											</Badge>
+										</div>
+										<div className="flex items-center gap-2 text-sm">
+											<Calendar className="text-muted-foreground" size={16} />
+											<span>
+												{format(new Date(detail.borrow_date), "PPP p")}
+											</span>
+										</div>
+										<div className="flex items-center gap-2">
+											<span className="text-muted-foreground text-xs">
+												Status Saat Ini:
+											</span>
+											{getStatusBadge(detail.status)}
+										</div>
+									</div>
+									<div className="space-y-2">
+										<p className="font-semibold text-[10px] text-muted-foreground uppercase">
+											Purpose
+										</p>
+										<p className="text-sm">{detail.note || "-"}</p>
+									</div>
+								</div>
 
-  // Handle status change in detail dialog
-  const handleStatusChange = (status: StatusType) => {
-    setEditedStatus(status)
-    setHasChanges(true)
-  }
+								{/* Products Table */}
+								<div className="space-y-3">
+									<h3 className="font-semibold text-muted-foreground text-xs uppercase">
+										Requested Equipment
+									</h3>
+									<div className="overflow-hidden rounded-lg border">
+										<Table>
+											<TableHeader className="bg-muted/50">
+												<TableRow>
+													<TableHead>Item</TableHead>
+													<TableHead className="text-center">
+														Stock Info
+													</TableHead>
+													<TableHead className="text-right">Amount</TableHead>
+												</TableRow>
+											</TableHeader>
+											<TableBody>
+												{detail.order_product?.map((item, idx) => (
+													<TableRow key={item.products?.name ?? idx}>
+														<TableCell>
+															<div className="flex items-center gap-3">
+																<div className="size-10 flex-shrink-0 overflow-hidden rounded border bg-muted">
+																	{item.products?.attachment ? (
+																		<img
+																			alt={item.products.name}
+																			className="h-full w-full object-cover"
+																			src={item.products.attachment}
+																		/>
+																	) : (
+																		<div className="flex h-full w-full items-center justify-center text-muted-foreground/30">
+																			<Package size={16} />
+																		</div>
+																	)}
+																</div>
+																<div>
+																	<p className="font-semibold text-sm">
+																		{item.products?.name}
+																	</p>
+																	<p className="text-[10px] text-muted-foreground uppercase">
+																		{item.products?.categories?.name} •{" "}
+																		{item.products?.model || "Generic"}
+																	</p>
+																</div>
+															</div>
+														</TableCell>
+														<TableCell className="text-center">
+															<span
+																className={`rounded-full px-2 py-0.5 text-xs ${Number(item.products?.available_stock) < item.amount ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}
+															>
+																{item.products?.available_stock} /{" "}
+																{item.products?.total_stock} Avail
+															</span>
+														</TableCell>
+														<TableCell className="text-center text-xs">
+															{item.amount}
+														</TableCell>
+													</TableRow>
+												))}
+											</TableBody>
+										</Table>
+									</div>
+								</div>
 
-  // Apply changes from detail dialog
-  const applyChanges = () => {
-    if (selectedBorrowing && hasChanges) {
-      handleStatusUpdate(selectedBorrowing.id, editedStatus)
-      setHasChanges(false)
+								{/* Admin Status Action */}
+								<div className="space-y-2">
+									<h3 className="font-semibold text-muted-foreground text-xs uppercase">
+										Admin Actions
+									</h3>
+									<div className="flex flex-wrap gap-2">
+										{detail.status === "pending" && (
+											<>
+												<Button
+													disabled={isUpdating}
+													onClick={() =>
+														handleUpdateStatus({
+															id: detail.id,
+															status: "borrowed",
+														})
+													}
+													variant={"secondary"}
+												>
+													<CheckCircle2 className="mr-2 size-4" /> Approve Order
+												</Button>
+												<Button
+													disabled={isUpdating}
+													onClick={() =>
+														handleUpdateStatus({
+															id: detail.id,
+															status: "rejected",
+														})
+													}
+													variant="destructive"
+												>
+													<XCircle className="mr-2 size-4" /> Reject
+												</Button>
+											</>
+										)}
 
-      // Update the selected borrowing to reflect changes
-      setSelectedBorrowing({
-        ...selectedBorrowing,
-        status: editedStatus,
-      })
-    }
-  }
+										{detail.status === "borrowed" && (
+											<Button
+												className="bg-gray-700 text-white hover:bg-gray-800"
+												disabled={isUpdating}
+												onClick={() =>
+													handleUpdateStatus({
+														id: detail.id,
+														status: "returned",
+													})
+												}
+											>
+												<RefreshCcw className="mr-2 size-4" /> Confirm Return
+											</Button>
+										)}
 
-return (
-    <div className="flex h-screen bg-transparent w-screen flex-col items-center">
+										{(detail.status === "returned" ||
+											detail.status === "rejected") && (
+											<Button
+												disabled={isUpdating}
+												onClick={() =>
+													handleUpdateStatus({
+														id: detail.id,
+														status: "pending",
+													})
+												}
+												size={"sm"}
+												variant="outline"
+											>
+												Reset to Pending
+											</Button>
+										)}
+									</div>
+									{isUpdating && (
+										<p className="animate-pulse text-[10px] text-primary italic">
+											Updating status in database...
+										</p>
+									)}
+								</div>
+							</div>
+						)
+					)}
 
-                <Card className="w-full sm:m-6 lg:m-8 rounded-none max-w-7xl sm:rounded-md">
-                    <CardHeader>
-                        <CardTitle>Data Peminjaman</CardTitle>
-                        <CardDescription>Seluruh Data Peminjaman Inventory Tkj</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {/* Filters */}
-                        <div className="flex flex-col sm:flex-row gap-4 mb-6">
-                            <div className="relative flex-1">
-                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    type="text"
-                                    placeholder="Search borrowings..."
-                                    className="pl-8"
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                />
-                            </div>
-                            <Select value={statusFilter} onValueChange={setStatusFilter}>
-                                <SelectTrigger className="w-full sm:w-[180px]">
-                                    <SelectValue placeholder="Filter by status" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Statuses</SelectItem>
-                                    <SelectItem value="pending">Pending</SelectItem>
-                                    <SelectItem value="borrowed">Borrow</SelectItem>
-                                    <SelectItem value="returned">Return</SelectItem>
-                                    <SelectItem value="rejected">Reject</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        {/* Table */}
-                        <div className="border rounded-md overflow-hidden">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead className="min-w-16">
-                                            No
-                                        </TableHead>
-                                        <TableHead
-                                            onClick={() => requestSort("product")}
-                                            className=""
-                                        >
-                                            Product
-                                            {getSortDirection("product") === "ascending" && <ChevronUp className="inline  ml-1 size-4 text-muted-foreground" />}
-                                            {getSortDirection("product") === "descending" && <ChevronDown className="inline ml-1 size-4 text-muted-foreground" />}
-                                        </TableHead>
-                                        <TableHead className="" onClick={() => requestSort("borrower")}>
-                                            Name
-                                            {getSortDirection("borrower") === "ascending" && <ChevronUp className="inline  ml-1 size-4 text-muted-foreground" />}
-                                            {getSortDirection("borrower") === "descending" && <ChevronDown className="inline  ml-1 size-4 text-muted-foreground" />}
-                                        </TableHead>
-                                        <TableHead className="" onClick={() => requestSort("class")}>
-                                            Class
-                                            {getSortDirection("class") === "ascending" && <ChevronUp className="inline  ml-1 size-4 text-muted-foreground" />}
-                                            {getSortDirection("class") === "descending" && <ChevronDown className="inline  ml-1 size-4 text-muted-foreground" />}
-                                        </TableHead>
-                                        <TableHead className="" onClick={() => requestSort("total")}>
-                                            total
-                                            {getSortDirection("total") === "ascending" && <ChevronUp className="inline  ml-1 size-4 text-muted-foreground" />}
-                                            {getSortDirection("total") === "descending" && <ChevronDown className="inline  ml-1 size-4 text-muted-foreground" />}
-                                        </TableHead>
-                                        
-                                        <TableHead className="" onClick={() => requestSort("borrowDate")}>
-                                            Date
-                                            {getSortDirection("borrowDate") === "ascending" && <ChevronUp className="inline  ml-1 size-4 text-muted-foreground" />}
-                                            {getSortDirection("borrowDate") === "descending" && <ChevronDown className="inline  ml-1 size-4 text-muted-foreground" />}
-                                        </TableHead>
-                                        <TableHead>Status</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {sortedAndFilteredBorrowings.length > 0 ? (
-                                        sortedAndFilteredBorrowings.map((borrowing) => (
-                                            <TableRow key={borrowing.id} className="cursor-pointer">
-                                                <TableCell className="font-medium text-sm w-4 text-muted-foreground">
-                                                    {borrowings.indexOf(borrowing) + 1 + (page - 1) * pageSize}
-                                                </TableCell>
-                                                <TableCell onClick={() => handleRowClick(borrowing)}>{borrowing.product_id.name.split(" ")[0]}</TableCell>
-                                                <TableCell onClick={() => handleRowClick(borrowing)}>{borrowing.name}</TableCell>
-                                                <TableCell onClick={() => handleRowClick(borrowing)}>{borrowing.class}</TableCell>
-                                                <TableCell onClick={() => handleRowClick(borrowing)}>{borrowing.total}</TableCell>
-                                                <TableCell onClick={() => handleRowClick(borrowing)}>
-                                                    {format(borrowing.created_at, "MMM dd, yyyy")}
-                                                </TableCell>
-                                                <TableCell onClick={() => handleRowClick(borrowing)}>
-                                                    <Badge variant="outline" className={getStatusColor(borrowing.status)}>
-                                                        {borrowing.status.charAt(0).toUpperCase() + borrowing.status.slice(1)}
-                                                    </Badge>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))
-                                    ) : (
-                                        <TableRow>
-                                            <TableCell colSpan={7} className="h-24 text-center">
-                                                No borrowings found.
-                                            </TableCell>
-                                        </TableRow>
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </div>
-                        {sortedAndFilteredBorrowings.length !== 15 && sortedAndFilteredBorrowings.length > 0 && <div className="text-center text-sm text-muted-foreground opacity-80 mt-4">(The end of the data)</div>}
-                        {/* Pagination */}
-                        <Pagination className="mt-6" >
-                          <PaginationContent>
-                            <PaginationItem>
-                              <PaginationPrevious
-                                className={page === 1 ? "cursor-not-allowed opacity-50" : ""}
-                                onClick={() => { if (page > 1) { setPage(page - 1); } }}
-                              />
-                            </PaginationItem >
-                            <PaginationItem>
-                              {Array.from({ length: totalPages }, (_, index) => (
-                                <PaginationLink 
-                                  key={index + 1}
-                                  href="#"
-                                  onClick={()=> setPage(index + 1)}
-                                  isActive={page == index + 1}
-                                >
-                                  {index + 1}
-                                </PaginationLink>
-                              ))}
-                            </PaginationItem>
-                            <PaginationItem>
-                              <PaginationEllipsis />
-                            </PaginationItem>
-                            <PaginationItem>
-                              <PaginationNext onClick={()=> page !== totalPages? setPage(page + 1): ""} 
-                                className={page === totalPages ? "cursor-not-allowed opacity-50" : ""}/>
-                            </PaginationItem>
-                          </PaginationContent>
-                        </Pagination>
-                    </CardContent>
-                </Card>
-
-        {/* Detail Dialog */}
-        <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-            <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                    <DialogTitle className="text-center">Detail Peminjaman</DialogTitle>
-                    {/* <DialogDescription>Complete information about this borrowing record</DialogDescription> */}
-                </DialogHeader>
-
-                {selectedBorrowing && (
-                    <div className="grid gap-4 py-4">
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <span className="text-sm font-medium">Product:</span>
-                            <span className="col-span-3">{selectedBorrowing.product_id.name}</span>
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <span className="text-sm font-medium">Borrower:</span>
-                            <span className="col-span-3">{selectedBorrowing.name}</span>
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <span className="text-sm font-medium">Class:</span>
-                            <span className="col-span-3">{selectedBorrowing.class}</span>
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <span className="text-sm font-medium">Total:</span>
-                            <span className="col-span-3">{selectedBorrowing.total}</span>
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <span className="text-sm font-medium">Borrow:</span>
-                            <span className="text-nowrap">{format(selectedBorrowing.created_at, `dd MMMM yyyy, hh:mm `)}</span>
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <span className="text-sm font-medium">Return:</span>
-                            <span className="text-nowrap">{selectedBorrowing.updated_at? (format(selectedBorrowing.updated_at, "dd MMMM yyyy, hh:mm")) : ("-")}</span>
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <span className="text-sm font-medium">Status:</span>
-                            <div className="col-span-3">
-                                <Select value={editedStatus} onValueChange={handleStatusChange}>
-                                    <SelectTrigger className={getStatusColor(editedStatus)}>
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="pending">Pending</SelectItem>
-                                        <SelectItem value="borrowed">Borrowed</SelectItem>
-                                        <SelectItem value="returned">Returned</SelectItem>
-                                        <SelectItem value="rejected">Rejected</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <span className="text-sm font-medium">Description:</span>
-                            <span className="col-span-3">
-                                {selectedBorrowing.comment ? (
-                                    selectedBorrowing.comment
-                                ) : (
-                                    <span className="text-muted-foreground">No Description</span>
-                                )}
-                            </span>
-                        </div>
-                    </div>
-                )}
-
-                <DialogFooter>
-                    <Button variant="default" onClick={applyChanges} disabled={!hasChanges} className="mr-2">
-                        Apply
-                    </Button>
-                    <Button variant="outline" onClick={() => setIsDetailOpen(false)}>
-                        Close
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-
-        {/* <div className="flex justify-between mt-4">
-        <button disabled={page === 1} onClick={() => setPage(page - 1)}>
-          Prev
-        </button>
-        <span>
-          Page {page} of {totalPages}
-        </span>
-        <button disabled={page === totalPages} onClick={() => setPage(page + 1)}>
-          Next
-        </button>
-        </div> */}
-        
-    </div>
-)}
+					<DialogFooter>
+						<Button onClick={() => setIsDetailOpen(false)} variant="outline">
+							Close
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+		</div>
+	);
+}
