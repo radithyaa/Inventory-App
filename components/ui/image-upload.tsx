@@ -91,7 +91,9 @@ export function ImageUpload({ value, onChange, disabled }: ImageUploadProps) {
 						<Image
 							alt="Product Preview"
 							className="h-full w-full rounded-md object-contain"
+							height={500}
 							src={preview}
+							width={500}
 						/>
 						{!(disabled || isUploading) && (
 							<button

@@ -23,7 +23,6 @@ import {
 	Search,
 	Trash,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import * as React from "react";
 import { useForm } from "react-hook-form";
@@ -563,12 +562,10 @@ export default function ProductsTable() {
 						<div className="space-y-6">
 							<div className="flex h-48 w-full items-center justify-center overflow-hidden rounded-lg border bg-muted">
 								{selectedProductForView.attachment ? (
-									<Image
+									<img
 										alt={selectedProductForView.name}
-										className="h-full w-full object-contain"
-										height={300}
+										className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
 										src={selectedProductForView.attachment}
-										width={300}
 									/>
 								) : (
 									<div className="flex flex-col items-center text-muted-foreground">

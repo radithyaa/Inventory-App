@@ -83,6 +83,7 @@ import {
 	PaginationPrevious,
 } from "./ui/pagination";
 import { Skeleton } from "./ui/skeleton";
+import Image from "next/image";
 
 // --- TYPES ---
 interface OrderSummary {
@@ -581,10 +582,12 @@ export default function BorrowingDashboard() {
 															<div className="flex items-center gap-3">
 																<div className="size-10 flex-shrink-0 overflow-hidden rounded border bg-muted">
 																	{item.products?.attachment ? (
-																		<img
+																		<Image
 																			alt={item.products.name}
-																			className="h-full w-full object-cover"
+																			className="h-full w-full object-contain"
+																			height={300}
 																			src={item.products.attachment}
+																			width={300}
 																		/>
 																	) : (
 																		<div className="flex h-full w-full items-center justify-center text-muted-foreground/30">

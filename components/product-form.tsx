@@ -11,6 +11,7 @@ import {
 	ShoppingCart,
 	Trash2,
 } from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -257,10 +258,12 @@ export default function InventoryBorrowingForm() {
 										>
 											{/* Image */}
 											<div className="relative aspect-[4/3] overflow-hidden bg-muted">
-												<img
+												<Image
 													alt={product.name}
-													className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+													className="h-full w-full object-contain"
+													height={300}
 													src={product.attachment}
+													width={300}
 												/>
 												{/* Gradient overlay */}
 												<div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
