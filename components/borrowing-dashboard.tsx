@@ -121,7 +121,9 @@ export default function BorrowingDashboard() {
 	const [isDetailOpen, setIsDetailOpen] = useState(false);
 
 	// --- Server-side State Management ---
-	const [sorting, setSorting] = useState<SortingState>([]);
+	const [sorting, setSorting] = useState<SortingState>([
+		{ id: "borrow_date", desc: true },
+	]);
 	const [{ pageIndex, pageSize }, setPagination] = useState<PaginationState>({
 		pageIndex: 0,
 		pageSize: 15,
@@ -201,7 +203,7 @@ export default function BorrowingDashboard() {
 		mutationFn: ({ id, status }: { id: string | number; status: StatusType }) =>
 			updateOrderStatus(id, status),
 		onSuccess: () => {
-			toast.success("Order status has been updated in database.");
+			toast.success("Order status has been updated.");
 			queryClient.invalidateQueries({ queryKey: ["orders"] });
 			queryClient.invalidateQueries({
 				queryKey: ["order-detail", selectedOrderId],

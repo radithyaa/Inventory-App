@@ -70,7 +70,8 @@ export const getProducts = async ({
 		`,
 			{ count: "exact" }
 		)
-		.is("deleted_at", null); // Soft delete filter
+		.is("deleted_at", null) // Soft delete filter for products
+		.is("order_product.deleted_at", null); // Soft delete filter for order_product items
 
 	// Apply search filter (search in name, model, serial_number)
 	if (searchTerm) {
@@ -303,6 +304,7 @@ export const getProductActiveBorrowers = async (
 			)
 		`)
 		.eq("product_id", productId)
+		.is("deleted_at", null)
 		.or("status.eq.borrowed,status.eq.pending", { foreignTable: "orders" });
 
 	if (error) {

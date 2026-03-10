@@ -201,6 +201,7 @@ export default function OrderTrackingPage() {
 			.from("orders")
 			.select("*")
 			.eq("id", id)
+			.is("deleted_at", null)
 			.single();
 
 		if (orderError) {
@@ -221,7 +222,8 @@ export default function OrderTrackingPage() {
           categories (name)
         )
       `)
-			.eq("order_id", id);
+			.eq("order_id", id)
+			.is("deleted_at", null);
 
 		if (productError) {
 			console.error(productError);

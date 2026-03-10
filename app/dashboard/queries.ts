@@ -25,7 +25,7 @@ export const getOrders = async ({
 	pageSize = 10,
 	searchTerm = "",
 	statusFilter = "all",
-	sortBy = "created_at",
+	sortBy = "borrow_date",
 	sortOrder = "desc",
 }: GetOrdersParams = {}) => {
 	const supabase = await createClient();
@@ -43,7 +43,8 @@ export const getOrders = async ({
 		`,
 			{ count: "exact" }
 		)
-		.is("deleted_at", null); // Filter soft deleted
+		.is("deleted_at", null) // Filter soft deleted orders
+		.is("order_product.deleted_at", null); // Filter soft deleted order items
 
 	// Apply search filter (name or note)
 	if (searchTerm) {
@@ -61,7 +62,7 @@ export const getOrders = async ({
 	if (sortBy) {
 		query = query.order(sortBy, { ascending: sortOrder === "asc" });
 	} else {
-		query = query.order("created_at", { ascending: false });
+		query = query.order("borrow_date", { ascending: false });
 	}
 
 	// Apply pagination
@@ -105,6 +106,7 @@ export const getOrderDetails = async (orderId: string) => {
 			)
 		`)
 		.eq("id", orderId)
+		.is("order_product.deleted_at", null)
 		.single();
 
 	if (error) {
@@ -148,15 +150,29 @@ export const updateOrderStatus = async (
  */
 export const deleteOrder = async (id: number | string) => {
 	const supabase = await createClient();
+	const deletedAt = new Date().toISOString();
 
-	const { error } = await supabase
+	// Soft delete the order
+	const { error: orderError } = await supabase
 		.from("orders")
-		.update({ deleted_at: new Date().toISOString() })
+		.update({ deleted_at: deletedAt })
 		.eq("id", id);
 
-	if (error) {
-		console.error("Delete Error:", error.message);
-		throw new Error(`Delete failed: ${error.message}`);
+	if (orderError) {
+		console.error("Delete Order Error:", orderError.message);
+		throw new Error(`Delete failed: ${orderError.message}`);
+	}
+
+	// Soft delete the related order_product items
+	const { error: itemsError } = await supabase
+		.from("order_product")
+		.update({ deleted_at: deletedAt })
+		.eq("order_id", id);
+
+	if (itemsError) {
+		console.error("Delete Order Items Error:", itemsError.message);
+		// Note: We might want to handle this differently, but for now we log it.
+		// Since the order itself is soft-deleted, these items will likely be ignored by queries anyway.
 	}
 
 	revalidatePath("/dashboard");

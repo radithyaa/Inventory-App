@@ -253,22 +253,55 @@ export default function ProductsTable() {
 		{
 			accessorKey: "id",
 			header: "No",
+			// Menggunakan pagination state agar nomor tetap urut di tiap halaman
 			cell: ({ row }) =>
 				pagination.pageIndex * pagination.pageSize + row.index + 1,
 		},
-		{ accessorKey: "name", header: "Name" },
-		{ accessorKey: "category_name", header: "Category" },
-		{ accessorKey: "model", header: "Model" },
-		{ accessorKey: "total_stock", header: "Total" },
-		{ accessorKey: "available_stock", header: "Available" },
+		{
+			accessorKey: "name",
+			header: "Name",
+			cell: ({ getValue }) => getValue() || "-",
+		},
+		{
+			accessorKey: "category_name",
+			header: "Category",
+			cell: ({ getValue }) => getValue() || "-",
+		},
+		{
+			accessorKey: "model",
+			header: "Model",
+			cell: ({ getValue }) => getValue() || "-",
+		},
+		{
+			accessorKey: "total_stock",
+			header: "Total",
+			cell: ({ getValue }) => {
+				const val = getValue();
+				return val !== null && val !== undefined ? val : "-";
+			},
+		},
+		{
+			accessorKey: "available_stock",
+			header: "Available",
+			cell: ({ getValue }) => {
+				const val = getValue();
+				return val !== null && val !== undefined ? val : "-";
+			},
+		},
 		{
 			accessorKey: "status",
 			header: "Status",
-			cell: ({ row }) =>
-				getStatusBadge(
-					row.original.status,
-					Number(row.original.available_stock)
-				),
+			cell: ({ row }) => {
+				const status = row.original.status;
+				const available = Number(row.original.available_stock);
+
+				// Jika status atau available tidak ada, tampilkan "-"
+				if (!status && isNaN(available)) {
+					return "-";
+				}
+
+				return getStatusBadge(status, available);
+			},
 		},
 		{
 			id: "actions",
