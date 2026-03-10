@@ -238,7 +238,7 @@ export default function InventoryBorrowingForm() {
 						) : (
 							filteredProducts.map((product) => {
 								const rawName =
-									`${product.category_name || ""} ${product.model || ""} ${product.name || ""}`.trim();
+									`${product.category_name || ""} ${product.name || ""} ${product.model || ""} `.trim();
 								const productName = rawName
 									? rawName.charAt(0).toUpperCase() + rawName.slice(1)
 									: "-";
