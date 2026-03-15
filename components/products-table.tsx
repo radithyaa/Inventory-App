@@ -56,6 +56,7 @@ import {
 import {
 	Form,
 	FormControl,
+	FormDescription,
 	FormField,
 	FormItem,
 	FormLabel,
@@ -85,6 +86,7 @@ import {
 } from "./ui/alert-dialog";
 import { Badge } from "./ui/badge";
 import { CategoryAutocomplete } from "./ui/category-autocomplete";
+import { Checkbox } from "./ui/checkbox";
 import { ImageUpload } from "./ui/image-upload";
 import {
 	Pagination,
@@ -130,6 +132,7 @@ const productSchema = z.object({
 		.int()
 		.nonnegative({ message: "Total stock must be zero or positive" }),
 	status: z.enum(["available", "damaged", "lost", "maintenance", "disposed"]),
+	is_consumable: z.boolean().default(false),
 });
 
 type ProductFormValues = z.infer<typeof productSchema>;
@@ -150,6 +153,7 @@ export default function ProductsTable() {
 	const [searchTerm, setSearchTerm] = React.useState("");
 	const [filterCategory, setFilterCategory] = React.useState("all");
 	const [filterStatus, setFilterStatus] = React.useState("all");
+	const [filterConsumable, setFilterConsumable] = React.useState("all"); // "all" | "true" | "false"
 	const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
 	const pagination = React.useMemo(
@@ -173,6 +177,7 @@ export default function ProductsTable() {
 			sorting,
 			filterCategory,
 			filterStatus,
+			filterConsumable,
 		],
 		queryFn: () =>
 			getProducts({
@@ -183,13 +188,14 @@ export default function ProductsTable() {
 				sortOrder: sorting[0]?.desc ? "desc" : "asc",
 				categoryId: filterCategory,
 				status: filterStatus,
+				isConsumable: filterConsumable,
 			}),
 	});
 
 	const defaultData = React.useMemo(() => [], []);
 	const pageCount = data?.pageCount ?? 0;
 
-	// --- MUTATIONS (Fixed Hook Usage) ---
+	// --- MUTATIONS ---
 	const addOrUpdateMutation = useMutation({
 		mutationFn: addOrUpdateProduct,
 		onSuccess: () => {
@@ -228,43 +234,65 @@ export default function ProductsTable() {
 	});
 
 	const getStatusBadge = (status: string, available: number) => {
+		// New Logic: If DB status is NOT 'available', show original status
+		if (status !== "available") {
+			switch (status) {
+				case "maintenance":
+					return (
+						<Badge className="bg-yellow-500" variant="warning">
+							Maintenance
+						</Badge>
+					);
+				case "damaged":
+					return <Badge variant="destructive">Damaged</Badge>;
+				case "lost":
+					return (
+						<Badge className="bg-red-700" variant="destructive">
+							Lost
+						</Badge>
+					);
+				case "disposed":
+					return (
+						<Badge className="opacity-70" variant="secondary">
+							Disposed
+						</Badge>
+					);
+				default:
+					return <Badge variant="outline">{status}</Badge>;
+			}
+		}
+
+		// If status is 'available', check stock
 		if (available === 0) {
 			return <Badge variant="secondary">Checked Out</Badge>;
 		}
-		switch (status) {
-			case "available":
-				return (
-					<Badge className="bg-green-500 hover:bg-green-600">Available</Badge>
-				);
-			case "maintenance":
-				return (
-					<Badge className="bg-yellow-500" variant="warning">
-						Maintenance
-					</Badge>
-				);
-			case "damaged":
-				return <Badge variant="destructive">Damaged</Badge>;
-			default:
-				return <Badge variant="outline">{status}</Badge>;
-		}
+
+		return <Badge className="bg-green-500 hover:bg-green-600">Available</Badge>;
 	};
 
 	const columns: ColumnDef<Product>[] = [
 		{
 			accessorKey: "id",
 			header: "No",
-			// Menggunakan pagination state agar nomor tetap urut di tiap halaman
 			cell: ({ row }) =>
 				pagination.pageIndex * pagination.pageSize + row.index + 1,
 		},
 		{
 			accessorKey: "name",
 			header: "Name",
-			cell: ({ getValue }) => getValue() || "-",
+			cell: ({ row }) => (
+				<div className="flex flex-col">
+					<span className="font-medium">{row.original.name || "-"}</span>
+					{row.original.is_consumable && (
+						<span className="text-[9px] uppercase">Bahan</span>
+					)}
+				</div>
+			),
 		},
 		{
 			accessorKey: "category_name",
 			header: "Category",
+			enableSorting: false,
 			cell: ({ getValue }) => getValue() || "-",
 		},
 		{
@@ -291,15 +319,13 @@ export default function ProductsTable() {
 		{
 			accessorKey: "status",
 			header: "Status",
+			enableSorting: false,
 			cell: ({ row }) => {
 				const status = row.original.status;
 				const available = Number(row.original.available_stock);
-
-				// Jika status atau available tidak ada, tampilkan "-"
 				if (!status && isNaN(available)) {
 					return "-";
 				}
-
 				return getStatusBadge(status, available);
 			},
 		},
@@ -401,8 +427,8 @@ export default function ProductsTable() {
 				</CardHeader>
 				<CardContent>
 					{/* FILTER HEADER */}
-					<div className="mb-6 flex flex-col gap-3 md:flex-row">
-						<div className="relative flex-1">
+					<div className="mb-6 flex flex-wrap gap-3">
+						<div className="relative min-w-[200px] flex-1">
 							<Search className="absolute top-2.5 left-2.5 h-4 w-4 text-gray-500" />
 							<Input
 								className="pl-8"
@@ -414,8 +440,8 @@ export default function ProductsTable() {
 						</div>
 
 						<Select onValueChange={setFilterCategory} value={filterCategory}>
-							<SelectTrigger className="w-full md:w-[180px]">
-								<SelectValue placeholder="All Categories" />
+							<SelectTrigger className="w-[160px]">
+								<SelectValue placeholder="Category" />
 							</SelectTrigger>
 							<SelectContent>
 								<SelectItem value="all">All Categories</SelectItem>
@@ -428,8 +454,8 @@ export default function ProductsTable() {
 						</Select>
 
 						<Select onValueChange={setFilterStatus} value={filterStatus}>
-							<SelectTrigger className="w-full md:w-[180px]">
-								<SelectValue placeholder="All Status" />
+							<SelectTrigger className="w-[140px]">
+								<SelectValue placeholder="Status" />
 							</SelectTrigger>
 							<SelectContent>
 								<SelectItem value="all">All Status</SelectItem>
@@ -438,6 +464,20 @@ export default function ProductsTable() {
 								<SelectItem value="damaged">Damaged</SelectItem>
 								<SelectItem value="lost">Lost</SelectItem>
 								<SelectItem value="disposed">Disposed</SelectItem>
+							</SelectContent>
+						</Select>
+
+						<Select
+							onValueChange={setFilterConsumable}
+							value={filterConsumable}
+						>
+							<SelectTrigger className="w-[140px]">
+								<SelectValue placeholder="Type" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="all">All Types</SelectItem>
+								<SelectItem value="false">Asset (Alat)</SelectItem>
+								<SelectItem value="true">Consumable (Bahan)</SelectItem>
 							</SelectContent>
 						</Select>
 					</div>
@@ -583,7 +623,14 @@ export default function ProductsTable() {
 									<p className="font-semibold text-[10px] text-muted-foreground uppercase tracking-wider">
 										Product Name
 									</p>
-									<p className="  ">{selectedProductForView.name}</p>
+									<p className="flex items-center gap-2">
+										{selectedProductForView.name}
+										{selectedProductForView.is_consumable && (
+											<Badge className="h-4 border-orange-200 bg-orange-100 px-1 text-[8px] text-orange-700">
+												BAHAN
+											</Badge>
+										)}
+									</p>
 								</div>
 								<div className="space-y-1">
 									<p className="font-semibold text-[10px] text-muted-foreground uppercase tracking-wider">
@@ -780,6 +827,7 @@ function ProductForm({
 					model: product.model || "",
 					serial_number: product.serial_number || "",
 					attachment: product.attachment || "",
+					is_consumable: product.is_consumable ?? false,
 				}
 			: {
 					name: "",
@@ -789,6 +837,7 @@ function ProductForm({
 					model: "",
 					serial_number: "",
 					attachment: "",
+					is_consumable: false,
 				},
 	});
 
@@ -883,6 +932,30 @@ function ProductForm({
 						)}
 					/>
 				</div>
+
+				<FormField
+					control={form.control}
+					name="is_consumable"
+					render={({ field }) => (
+						<FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow-sm">
+							<FormControl>
+								<Checkbox
+									checked={field.value}
+									disabled={isSubmitting}
+									onCheckedChange={field.onChange}
+								/>
+							</FormControl>
+							<div className="space-y-1 leading-none">
+								<FormLabel>Barang Habis Pakai</FormLabel>
+								<FormDescription>
+									Ceklis jika barang ini adalah bahan yang tidak perlu
+									dikembalikan (ex. kabel, konektor, dll).
+								</FormDescription>
+							</div>
+						</FormItem>
+					)}
+				/>
+
 				<FormField
 					control={form.control}
 					name="attachment"

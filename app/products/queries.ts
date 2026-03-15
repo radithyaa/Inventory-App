@@ -7,9 +7,9 @@ import { createClient } from "@/utils/supabase/server";
 // Schema for form validation using Zod
 const productSchema = z.object({
 	name: z.string().min(1, { message: "Product name is required" }),
-	category_id: z.coerce.number().nullable().optional(),
-	model: z.string().nullable().optional(),
-	serial_number: z.string().nullable().optional(),
+	category_id: z.coerce.number().optional().nullable(),
+	model: z.string().optional().nullable(),
+	serial_number: z.string().optional().nullable(),
 	attachment: z
 		.string()
 		.url({ message: "Must be a valid URL" })
@@ -21,12 +21,14 @@ const productSchema = z.object({
 		.int()
 		.nonnegative({ message: "Total stock must be zero or positive" }),
 	status: z.enum(["available", "damaged", "lost", "maintenance", "disposed"]),
+	is_consumable: z.boolean().default(false),
 });
 
 type ProductFormValues = z.infer<typeof productSchema>;
 
 interface GetProductsParams {
 	categoryId?: string;
+	isConsumable?: string; // "all" | "true" | "false"
 	pageIndex?: number;
 	pageSize?: number;
 	searchTerm?: string;
@@ -50,6 +52,7 @@ export const getProducts = async ({
 	sortOrder = "asc",
 	categoryId = "all",
 	status = "all",
+	isConsumable = "all",
 }: GetProductsParams = {}) => {
 	const supabase = await createClient();
 
@@ -70,8 +73,7 @@ export const getProducts = async ({
 		`,
 			{ count: "exact" }
 		)
-		.is("deleted_at", null) // Soft delete filter for products
-		.is("order_product.deleted_at", null); // Soft delete filter for order_product items
+		.is("deleted_at", null);
 
 	// Apply search filter (search in name, model, serial_number)
 	if (searchTerm) {
@@ -90,10 +92,15 @@ export const getProducts = async ({
 		productsQuery = productsQuery.eq("status", status);
 	}
 
+	// Apply Consumable Filter
+	if (isConsumable !== "all") {
+		productsQuery = productsQuery.eq("is_consumable", isConsumable === "true");
+	}
+
 	// Apply sorting
 	if (sortBy) {
 		productsQuery = productsQuery.order(sortBy, {
-			ascending: sortOrder === "asc",
+			ascending: sortOrder === "desc",
 		});
 	} else {
 		productsQuery = productsQuery.order("created_at", { ascending: false });
@@ -117,6 +124,8 @@ export const getProducts = async ({
 	const productsWithAvailableStock = productsData.map((product) => {
 		const rawOrderProducts =
 			product.order_product as unknown as OrderProductRelation[];
+
+		// Note: we only count orders that are not deleted (logic handled by DB join or here)
 		const activeOrders =
 			rawOrderProducts?.filter(
 				(op) =>
@@ -187,6 +196,9 @@ export const createCategory = async (name: string) => {
 	return data.id;
 };
 
+/**
+ * ALWAYS INSERT a new product row, never update existing by name.
+ */
 export const addOrUpdateProduct = async (data: ProductFormValues) => {
 	const supabase = await createClient();
 	const validated = productSchema.parse(data);
@@ -195,39 +207,19 @@ export const addOrUpdateProduct = async (data: ProductFormValues) => {
 		validated.category_id = null;
 	}
 
-	let query = supabase
+	// Always insert a new row as requested
+	const { data: newProduct, error } = await supabase
 		.from("products")
-		.select("id, total_stock")
-		.ilike("name", validated.name)
-		.is("deleted_at", null);
+		.insert([validated])
+		.select()
+		.single();
 
-	if (validated.serial_number) {
-		query = query.eq("serial_number", validated.serial_number);
-	}
-
-	const { data: existingProduct } = await query.single();
-
-	if (existingProduct) {
-		const result = await supabase
-			.from("products")
-			.update({
-				...validated,
-				total_stock:
-					(existingProduct.total_stock || 0) + (validated.total_stock || 0),
-			})
-			.eq("id", existingProduct.id);
-		if (result.error) {
-			throw new Error(result.error.message);
-		}
-	} else {
-		const result = await supabase.from("products").insert([validated]);
-		if (result.error) {
-			throw new Error(result.error.message);
-		}
+	if (error) {
+		throw new Error(error.message);
 	}
 
 	revalidatePath("/products");
-	return existingProduct ? "updated" : "added";
+	return "added";
 };
 
 export const updateProduct = async (id: number, data: ProductFormValues) => {
@@ -249,9 +241,6 @@ export const updateProduct = async (id: number, data: ProductFormValues) => {
 	revalidatePath("/products");
 };
 
-/**
- * SOFT DELETE: Instead of removing row, set deleted_at timestamp
- */
 export const deleteProduct = async (id: number) => {
 	const supabase = await createClient();
 

@@ -77,7 +77,7 @@ export default function InventoryBorrowingForm() {
 	// --- DATA FETCHING ---
 	const { data: productsData, isLoading } = useQuery({
 		queryKey: ["allProductsForBorrowing"],
-		queryFn: () => getProducts({ pageSize: 1000 }),
+		queryFn: () => getProducts({ pageSize: 1000, status: "available" }),
 	});
 
 	// --- FILTER LOGIC ---

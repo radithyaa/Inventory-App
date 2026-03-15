@@ -29,7 +29,7 @@ export function ImageUpload({ value, onChange, disabled }: ImageUploadProps) {
 			try {
 				// 1. Compression Options
 				const options = {
-					maxSizeMB: 1, // Max 1MB
+					maxSizeMB: 0.05, // Max 50KB
 					maxWidthOrHeight: 1200, // Reasonable resolution
 					useWebWorker: true,
 					fileType: "image/webp", // Good for web
